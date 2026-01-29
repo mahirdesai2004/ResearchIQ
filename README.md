@@ -48,11 +48,12 @@ Backend service for **ResearchIQ**, an LLM-based research analytics system. This
 ## Project Structure
 
 ```
-backend/
-├── data/               # Local data storage
-│   └── papers.json     # Saved paper metadata
-├── main.py             # Main application and endpoints
-├── pyproject.toml      # Project configuration and dependencies
-├── uv.lock             # Dependency lock file
-└── README.md           # This file
+.
+├── README.md           # This file
+├── backend/
+│   ├── data/           # Local data storage
+│   │   └── papers.json # Saved paper metadata
+│   ├── main.py         # Main application and endpoints
+│   ├── pyproject.toml  # Project configuration and dependencies
+│   └── uv.lock         # Dependency lock file
 ```
