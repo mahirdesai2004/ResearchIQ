@@ -88,3 +88,62 @@ def get_arxiv_papers(
         return {"error": f"Failed to fetch from arXiv: {str(e)}"}
     except ET.ParseError as e:
         return {"error": f"Failed to parse arXiv response: {str(e)}"}
+
+def load_papers() -> List[Dict[str, Any]]:
+    """Helper to safely load papers from local JSON storage."""
+    file_path = Path("data/papers.json")
+    if not file_path.exists():
+        return []
+    
+    try:
+        with open(file_path, "r") as f:
+            return json.load(f)
+    except json.JSONDecodeError:
+        return []
+
+@app.get("/analytics/yearly-count")
+def get_yearly_count():
+    """
+    Aggregate research papers by their published year.
+    Returns a count of papers for each year.
+    """
+    papers = load_papers()
+    yearly_counts = {}
+    
+    for paper in papers:
+        year = paper.get("published_year", "Unknown")
+        yearly_counts[year] = yearly_counts.get(year, 0) + 1
+        
+    return {"yearly_counts": yearly_counts}
+
+@app.get("/analytics/filter")
+def filter_papers(
+    year: str = Query(None, description="Filter by published year"),
+    keyword: str = Query(None, description="Filter by keyword in title or abstract")
+):
+    """
+    Filter stored papers by published year and/or keyword.
+    Keyword search is case-insensitive and checks both title and abstract.
+    """
+    papers = load_papers()
+    filtered_papers = []
+    
+    for paper in papers:
+        # Year filter
+        if year and paper.get("published_year") != year:
+            continue
+            
+        # Keyword filter
+        if keyword:
+            kw = keyword.lower()
+            title = paper.get("title", "").lower()
+            abstract = paper.get("abstract", "").lower()
+            if kw not in title and kw not in abstract:
+                continue
+                
+        filtered_papers.append(paper)
+        
+    return {
+        "count": len(filtered_papers),
+        "papers": filtered_papers
+    }
