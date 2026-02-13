@@ -45,6 +45,30 @@ Backend service for **ResearchIQ**, an LLM-based research analytics system. This
     curl "http://127.0.0.1:8000/papers/arxiv?query=generative+ai&max_results=3"
     ```
 
+### 3. Analytics: Yearly Count
+*   **URL:** `GET /analytics/yearly-count`
+*   **Description:** Aggregates stored papers by their published year.
+*   **Returns:** JSON object with years as keys and paper counts as values.
+*   **Example:**
+    ```bash
+    curl "http://127.0.0.1:8000/analytics/yearly-count"
+    ```
+
+### 4. Analytics: Filter Papers
+*   **URL:** `GET /analytics/filter`
+*   **Parameters:**
+    *   `year` (string, optional): Filter by published year.
+    *   `keyword` (string, optional): Case-insensitive search in title and abstract.
+*   **Description:** Filters stored papers based on year and/or keyword.
+*   **Example:**
+    ```bash
+    # Filter by year
+    curl "http://127.0.0.1:8000/analytics/filter?year=2023"
+
+    # Filter by keyword
+    curl "http://127.0.0.1:8000/analytics/filter?keyword=agent"
+    ```
+
 ## Project Structure
 
 ```
