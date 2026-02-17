@@ -69,6 +69,25 @@ Backend service for **ResearchIQ**, an LLM-based research analytics system. This
     curl "http://127.0.0.1:8000/analytics/filter?keyword=agent"
     ```
 
+### 5. Analytics: Summaries
+*   **URL:** `GET /analytics/summaries`
+*   **Description:** Returns stored papers with an LLM-ready summary generated from their abstracts. Summaries are cached for performance.
+*   **Example:**
+    ```bash
+    curl "http://127.0.0.1:8000/analytics/summaries"
+    ```
+
+### 6. Analytics: Keyword Trend
+*   **URL:** `GET /analytics/keyword-trend`
+*   **Parameters:**
+    *   `keyword` (string, required): The keyword to track trends for in titles and abstracts.
+*   **Description:** Analyzes the frequency of a specific keyword across publication years.
+*   **Returns:** JSON object with the keyword and a dictionary of yearly counts.
+*   **Example:**
+    ```bash
+    curl "http://127.0.0.1:8000/analytics/keyword-trend?keyword=ai"
+    ```
+
 ## Project Structure
 
 ```
