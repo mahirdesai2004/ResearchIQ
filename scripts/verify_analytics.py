@@ -85,13 +85,52 @@ def run_tests():
         print(f"FAILED: {e}")
         return False
 
+    print("\nTesting /system/stats...")
+    try:
+        r = requests.get(f"{base_url}/system/stats")
+        r.raise_for_status()
+        data = r.json()
+        print(f"Response stats: {data}")
+        if "total_papers" not in data:
+            print("FAILED: 'total_papers' not in response")
+            return False
+    except Exception as e:
+        print(f"FAILED: {e}")
+        return False
+
+    print("\nTesting /analytics/recent-papers?limit=2...")
+    try:
+        r = requests.get(f"{base_url}/analytics/recent-papers", params={"limit": 2})
+        r.raise_for_status()
+        data = r.json()
+        print(f"Response count: {data.get('count')}")
+        if data.get('count', 0) > 2:
+             print("FAILED: Returned more than limit")
+             return False
+    except Exception as e:
+        print(f"FAILED: {e}")
+        return False
+
+    print("\nTesting /analytics/top-keywords?limit=3...")
+    try:
+        r = requests.get(f"{base_url}/analytics/top-keywords", params={"limit": 3})
+        r.raise_for_status()
+        data = r.json()
+        print(f"Response top keywords: {data.get('top_keywords')}")
+        if len(data.get('top_keywords', [])) > 3:
+             print("FAILED: Returned more than limit")
+             return False
+    except Exception as e:
+        print(f"FAILED: {e}")
+        return False
+
     return True
 
 if __name__ == "__main__":
     # Start server
     print("Starting server...")
     proc = subprocess.Popen(
-        [sys.executable, "-m", "uvicorn", "main:app", "--port", "8000"],
+        ["uv", "run", "uvicorn", "main:app", "--port", "8000"],
         cwd="backend",
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
