@@ -94,7 +94,11 @@ def summarize_abstract(abstract: str) -> str:
     if not abstract or abstract == "No abstract available":
         return "No summary available."
     
-    keys_env = os.environ.get("GEMINI_API_KEYS", "AIzaSyANz3d8_0V2uGKwxYd0aizv37UhjlNL7xw,AIzaSyC_BIEFWblIiuYyz-7G8aqNNy18ts-aa3M,AIzaSyAGcxL_oa3V_WaRnNl3MFmx32IKsM-mpkM,AIzaSyCuglTRVeSXPeM9YNq3rEkchodhHKAOdqg,AIzaSyB6JWt5xjNsNMQyOvoy5t2NRcKY5CS09Jw,AIzaSyCX7MBPGAYLLYh7KVTcQ1qMRaiS9U8xVnI,AIzaSyB3J3RRpZAC22ICJIiJfC0IXwDGls1bRlg")
+    
+    from dotenv import load_dotenv
+    load_dotenv()
+    
+    keys_env = os.environ.get("GEMINI_API_KEYS", "")
     api_keys = [k.strip() for k in keys_env.split(",") if k.strip()]
     
     if not api_keys:
