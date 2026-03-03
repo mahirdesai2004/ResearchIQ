@@ -26,7 +26,15 @@ See [docs/architecture.md](docs/architecture.md) for a detailed overview of the 
     uv sync
     ```
 
-3.  **Run Development Server**:
+3.  **Environment Variables**:
+    Create a `.env` file in the `backend/` directory by copying from the example:
+    ```bash
+    cp .env.example .env
+    ```
+    Then, populate `GEMINI_API_KEYS` in `.env`.
+    *Note: API keys are strictly loaded from `.env` and multiple keys can be provided as a comma-separated string for rate-limit rotation. For security, never commit real API keys into the repository. `.env` is ignored by git.*
+
+4.  **Run Development Server**:
     ```bash
     uv run uvicorn main:app --reload
     ```

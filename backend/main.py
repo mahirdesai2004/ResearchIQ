@@ -18,50 +18,40 @@ def read_root():
 @app.get("/papers/arxiv")
 def get_arxiv_papers(
     query: str = Query("ai", description="Search query for arXiv"),
-    max_results: int = Query(5, description="Number of results to return")
+    max_results: int = Query(50, description="Number of results to return")
 ):
     """
     Fetch research papers from arXiv API.
     """
-    base_url = "http://export.arxiv.org/api/query"
-    params = {
-        "search_query": f"all:{query}",
-        "start": 0,
-        "max_results": max_results
-    }
+    logger.info(f"Handling /papers/arxiv request - Query: {query}, Max Results: {max_results}")
     
     try:
-        response = requests.get(base_url, params=params)
-        response.raise_for_status()
-        
-        # Parse XML response
-        root = ET.fromstring(response.content)
-        namespace = {'atom': 'http://www.w3.org/2005/Atom'}
-        entries = root.findall('atom:entry', namespace)
-        
-        papers = []
-        for entry in entries:
-            papers.append(parse_arxiv_entry(entry))
+        from utils import fetch_arxiv_papers
+        papers = fetch_arxiv_papers(query, max_results)
         
         # Save to local file
         existing_data = load_papers()
         
         # Simple deduplication based on title to prevent duplicates when fetching again
         existing_titles = {p.get("title") for p in existing_data}
+        added_count = 0
         for p in papers:
             if p.get("title") not in existing_titles:
                 existing_data.append(p)
+                added_count += 1
         
         save_papers(existing_data)
+        logger.info(f"Successfully fetched {len(papers)} papers, added {added_count} new papers.")
             
         return {
             "query": query,
-            "count": len(papers),
+            "count": added_count,
             "papers": papers,
-            "message": "Papers saved to data/papers.json"
+            "message": f"Added {added_count} new papers to data/papers.json"
         }
         
     except requests.RequestException as e:
+        logger.error(f"Failed to fetch from arXiv: {str(e)}")
         return {"error": f"Failed to fetch from arXiv: {str(e)}"}
     except ET.ParseError as e:
         return {"error": f"Failed to parse arXiv response: {str(e)}"}
@@ -83,9 +73,9 @@ def get_system_stats():
                 years.add(int(y))
                 
         if years:
-            earliest_year = str(min(years))
-            latest_year = str(max(years))
-            years_available = sorted(list(set(str(y) for y in years)))
+            earliest_year = min(years)
+            latest_year = max(years)
+            years_available = sorted(list(set(years)))
         else:
             earliest_year = None
             latest_year = None
@@ -148,7 +138,9 @@ def get_recent_papers(limit: int = Query(10, description="Number of recent paper
 @app.get("/analytics/filter")
 def filter_papers(
     year: str = Query(None, description="Filter by published year"),
-    keyword: str = Query(None, description="Filter by keyword in title or abstract")
+    keyword: str = Query(None, description="Filter by keyword in title or abstract"),
+    limit: int = Query(10, description="Number of results to return"),
+    offset: int = Query(0, description="Number of results to skip")
 ):
     """
     Filter stored papers by published year and/or keyword.
@@ -174,9 +166,13 @@ def filter_papers(
                     
             filtered_papers.append(paper)
             
+        paginated_papers = filtered_papers[offset:offset+limit]
+        logger.info(f"Found {len(filtered_papers)} matching papers, returning {len(paginated_papers)}.")
+            
         return {
             "count": len(filtered_papers),
-            "papers": filtered_papers
+            "returned": len(paginated_papers),
+            "papers": paginated_papers
         }
     except Exception as e:
         logger.error(f"Error in filter_papers: {e}", exc_info=True)
