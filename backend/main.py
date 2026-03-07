@@ -1,6 +1,7 @@
 import requests
 import xml.etree.ElementTree as ET
 from fastapi import FastAPI, Query, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 import json
 from pathlib import Path
 from typing import List, Dict, Any
@@ -10,6 +11,14 @@ import re
 from utils import parse_arxiv_entry, load_papers, save_papers, summarize_abstract, logger
 
 app = FastAPI(title="ResearchIQ Backend")
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.get("/")
 def read_root():
