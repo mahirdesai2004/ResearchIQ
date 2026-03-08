@@ -8,7 +8,7 @@ from typing import List, Dict, Any
 from collections import Counter
 import re
 
-from utils import parse_arxiv_entry, load_papers, save_papers, summarize_abstract, logger
+from utils import parse_arxiv_entry, load_papers, save_papers, summarize_abstract, fetch_arxiv_papers, logger
 
 app = FastAPI(title="ResearchIQ Backend")
 
@@ -35,7 +35,6 @@ def get_arxiv_papers(
     logger.info(f"Handling /papers/arxiv request - Query: {query}, Max Results: {max_results}")
     
     try:
-        from utils import fetch_arxiv_papers
         papers = fetch_arxiv_papers(query, max_results)
         
         # Save to local file
@@ -148,36 +147,31 @@ def get_recent_papers(limit: int = Query(10, description="Number of recent paper
 def filter_papers(
     year: str = Query(None, description="Filter by published year"),
     keyword: str = Query(None, description="Filter by keyword in title or abstract"),
-    limit: int = Query(10, description="Number of results to return"),
+    limit: int = Query(20, description="Number of results to return"),
     offset: int = Query(0, description="Number of results to skip")
 ):
     """
     Filter stored papers by published year and/or keyword.
-    Keyword search is case-insensitive and checks both title and abstract.
     """
     logger.info(f"Handling /analytics/filter request - Year: {year}, Keyword: {keyword}")
     try:
         papers = load_papers()
+
         filtered_papers = []
-        
         for paper in papers:
-            # Year filter
             if year and paper.get("published_year") != year:
                 continue
-                
-            # Keyword filter
             if keyword:
                 kw = keyword.lower()
                 title = paper.get("title", "").lower()
                 abstract = paper.get("abstract", "").lower()
                 if kw not in title and kw not in abstract:
                     continue
-                    
             filtered_papers.append(paper)
-            
+
         paginated_papers = filtered_papers[offset:offset+limit]
         logger.info(f"Found {len(filtered_papers)} matching papers, returning {len(paginated_papers)}.")
-            
+
         return {
             "count": len(filtered_papers),
             "returned": len(paginated_papers),
