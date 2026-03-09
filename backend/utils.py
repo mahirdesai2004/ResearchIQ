@@ -4,9 +4,10 @@ from pathlib import Path
 from typing import List, Dict, Any, Optional
 import logging
 import os
+import re
 import requests
 from dotenv import load_dotenv
-from pydantic import BaseModel, ValidationError
+from pydantic import BaseModel, ValidationError, Field
 from google import genai
 
 load_dotenv()
@@ -21,9 +22,18 @@ class Paper(BaseModel):
     abstract: str
     published_year: str
     source: str
+    arxiv_url: Optional[str] = None
+    pdf_url: Optional[str] = None
     summary: Optional[str] = None
+    domain: str = "Unknown"
+    keywords: List[str] = Field(default_factory=list)
 
-def parse_arxiv_entry(entry: ET.Element) -> Optional[Dict[str, Any]]:
+def extract_keywords(title: str) -> List[str]:
+    stop_words = {"the", "and", "of", "to", "in", "a", "is", "that", "for", "on", "it", "with", "as", "by", "are", "from", "an", "be", "this", "which", "or", "but", "not", "we", "can", "has", "have", "been", "was", "were", "their", "these", "also", "using"}
+    words = re.findall(r'\b[a-z]{4,}\b', title.lower())
+    return list(set(w for w in words if w not in stop_words))
+
+def parse_arxiv_entry(entry: ET.Element, domain: str = "Unknown") -> Optional[Dict[str, Any]]:
     """Helper to parse a single arXiv entry XML element."""
     namespace = {'atom': 'http://www.w3.org/2005/Atom'}
     
@@ -46,12 +56,22 @@ def parse_arxiv_entry(entry: ET.Element) -> Optional[Dict[str, Any]]:
     published_elem = entry.find('atom:published', namespace)
     published_year = published_elem.text[:4] if published_elem is not None and published_elem.text else "Unknown"
     
+    # Build arXiv URLs
+    arxiv_url = f"https://arxiv.org/abs/{paper_id}" if paper_id != "unknown" else None
+    pdf_url = f"https://arxiv.org/pdf/{paper_id}.pdf" if paper_id != "unknown" else None
+
+    keywords = extract_keywords(title)
+
     paper_dict = {
         "paper_id": paper_id,
         "title": title,
         "abstract": abstract,
         "published_year": published_year,
-        "source": "arxiv"
+        "source": "arxiv",
+        "arxiv_url": arxiv_url,
+        "pdf_url": pdf_url,
+        "domain": domain,
+        "keywords": keywords
     }
     
     # Validate
@@ -62,7 +82,7 @@ def parse_arxiv_entry(entry: ET.Element) -> Optional[Dict[str, Any]]:
         logger.warning(f"Validation error on arXiv entry: {e}")
         return None
 
-def fetch_arxiv_papers(query: str, max_results: int) -> List[Dict[str, Any]]:
+def fetch_arxiv_papers(query: str, max_results: int, domain: str = "Unknown") -> List[Dict[str, Any]]:
     """Fetches and parses papers from arXiv API."""
     base_url = "http://export.arxiv.org/api/query"
     params = {
@@ -80,7 +100,7 @@ def fetch_arxiv_papers(query: str, max_results: int) -> List[Dict[str, Any]]:
     
     papers = []
     for entry in entries:
-        parsed = parse_arxiv_entry(entry)
+        parsed = parse_arxiv_entry(entry, domain=domain)
         if parsed is not None:
             papers.append(parsed)
             
@@ -159,7 +179,16 @@ def call_llm_with_rotation(text: str) -> str:
         
         for model in models_to_try:
             try:
-                prompt = f"Summarize the following scientific text into 2 or 3 sentences focusing strictly on the core contribution and findings:\n\n{text}"
+                # Agentic prompt for structured research analysis
+                prompt = (
+                    "You are an AI Research Assistant. Analyze the following scientific abstract and provide a structured, "
+                    "concise summary (max 3 sentences). Focus on: \n"
+                    "1. The primary problem addressed.\n"
+                    "2. The core technical contribution.\n"
+                    "3. The significance of the results.\n\n"
+                    f"Abstract: {text}\n\n"
+                    "Format: Return only the analysis text, starting with 'AI Analysis:'"
+                )
                 response = client.models.generate_content(
                     model=model,
                     contents=prompt,
