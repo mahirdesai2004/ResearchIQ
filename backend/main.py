@@ -24,6 +24,20 @@ app.add_middleware(
 def read_root():
     return {"message": "Welcome to ResearchIQ API"}
 
+def get_domain_from_query(query: str) -> str:
+    query_lower = query.lower()
+    mapping = {
+        "artificial intelligence": "AI",
+        "machine learning": "ML",
+        "large language models": "LLM",
+        "nlp": "NLP",
+        "computer vision": "CV"
+    }
+    for k, v in mapping.items():
+        if k in query_lower:
+            return v
+    return "Other"
+
 @app.get("/papers/arxiv")
 def get_arxiv_papers(
     query: str = Query("ai", description="Search query for arXiv"),
@@ -35,25 +49,32 @@ def get_arxiv_papers(
     logger.info(f"Handling /papers/arxiv request - Query: {query}, Max Results: {max_results}")
     
     try:
-        papers = fetch_arxiv_papers(query, max_results)
+        domain = get_domain_from_query(query)
+        logger.info(f"Assigned domain '{domain}' for query '{query}'")
+        papers = fetch_arxiv_papers(query, max_results, domain=domain)
         
         # Save to local file
         existing_data = load_papers()
         
-        # Simple deduplication based on title to prevent duplicates when fetching again
-        existing_titles = {p.get("title") for p in existing_data}
+        # Deduplication using paper_id
+        existing_ids = {p.get("paper_id") for p in existing_data if p.get("paper_id")}
+        
         added_count = 0
         for p in papers:
-            if p.get("title") not in existing_titles:
+            if p.get("paper_id") not in existing_ids:
                 existing_data.append(p)
                 added_count += 1
         
-        save_papers(existing_data)
-        logger.info(f"Successfully fetched {len(papers)} papers, added {added_count} new papers.")
+        if added_count > 0:
+            save_papers(existing_data)
+            
+        logger.info(f"Successfully fetched {len(papers)} papers, added {added_count} new unique papers.")
             
         return {
             "query": query,
+            "domain": domain,
             "count": added_count,
+            "fetched": len(papers),
             "papers": papers,
             "message": f"Added {added_count} new papers to data/papers.json"
         }
@@ -62,7 +83,55 @@ def get_arxiv_papers(
         logger.error(f"Failed to fetch from arXiv: {str(e)}")
         return {"error": f"Failed to fetch from arXiv: {str(e)}"}
     except ET.ParseError as e:
+        logger.error(f"Failed to parse arXiv response: {str(e)}")
         return {"error": f"Failed to parse arXiv response: {str(e)}"}
+
+@app.post("/papers/arxiv/batch")
+def batch_ingest_arxiv_papers():
+    """
+    Batch ingest papers for a predefined set of key topics.
+    """
+    logger.info("Handling /papers/arxiv/batch request")
+    topics = [
+        "artificial intelligence", 
+        "machine learning", 
+        "large language models", 
+        "nlp", 
+        "computer vision"
+    ]
+    
+    total_fetched = 0
+    total_added = 0
+    
+    try:
+        existing_data = load_papers()
+        existing_ids = {p.get("paper_id") for p in existing_data if p.get("paper_id")}
+        
+        for topic in topics:
+            domain = get_domain_from_query(topic)
+            logger.info(f"Batch fetching for topic '{topic}' -> Domain '{domain}'")
+            papers = fetch_arxiv_papers(query=topic, max_results=50, domain=domain)
+            total_fetched += len(papers)
+            
+            for p in papers:
+                if p.get("paper_id") not in existing_ids:
+                    existing_data.append(p)
+                    existing_ids.add(p.get("paper_id"))
+                    total_added += 1
+                    
+        if total_added > 0:
+            save_papers(existing_data)
+            
+        logger.info(f"Batch ingestion complete. Fetched: {total_fetched}, Added: {total_added}")
+        return {
+            "message": "Batch ingestion complete",
+            "topics_processed": topics,
+            "total_fetched": total_fetched,
+            "total_added": total_added
+        }
+    except Exception as e:
+        logger.error(f"Error during batch ingestion: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error during batch ingestion")
 
 @app.get("/system/stats")
 def get_system_stats():
