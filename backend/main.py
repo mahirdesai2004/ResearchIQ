@@ -1,6 +1,8 @@
 import requests
 import xml.etree.ElementTree as ET
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Response
+import csv
+import io
 from fastapi.middleware.cors import CORSMiddleware
 import json
 from pathlib import Path
@@ -143,16 +145,24 @@ def get_system_stats():
         papers = load_papers()
         total_papers = len(papers)
         
-        years = set()
+        years = {}
+        domains = {}
+        
         for p in papers:
+            # Year distribution
             y = p.get("published_year")
             if y and y.isdigit():
-                years.add(int(y))
+                y_int = int(y)
+                years[y_int] = years.get(y_int, 0) + 1
+                
+            # Domain distribution
+            d = p.get("domain", "Unknown")
+            domains[d] = domains.get(d, 0) + 1
                 
         if years:
-            earliest_year = min(years)
-            latest_year = max(years)
-            years_available = sorted(list(set(years)))
+            earliest_year = min(years.keys())
+            latest_year = max(years.keys())
+            years_available = sorted(list(years.keys()))
         else:
             earliest_year = None
             latest_year = None
@@ -162,7 +172,9 @@ def get_system_stats():
             "total_papers": total_papers,
             "years_available": years_available,
             "earliest_year": earliest_year,
-            "latest_year": latest_year
+            "latest_year": latest_year,
+            "papers_per_domain": domains,
+            "year_distribution": years
         }
     except Exception as e:
         logger.error(f"Error in get_system_stats: {e}", exc_info=True)
@@ -311,6 +323,66 @@ def get_keyword_trend(keyword: str = Query(..., description="Keyword to track tr
         }
     except Exception as e:
         logger.error(f"Error in get_keyword_trend: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/analytics/domain-trends")
+def get_domain_trends(domain: str = Query(..., description="Domain to track trends for")):
+    """
+    Returns the yearly publication trend for a specific domain.
+    """
+    logger.info(f"Handling /analytics/domain-trends request - Domain: {domain}")
+    try:
+        papers = load_papers()
+        yearly_counts = {}
+        
+        target_domain = domain.lower()
+        for paper in papers:
+            p_domain = paper.get("domain", "").lower()
+            if p_domain == target_domain:
+                year = paper.get("published_year", "Unknown")
+                yearly_counts[year] = yearly_counts.get(year, 0) + 1
+                
+        # Format as list of dicts
+        trend = [{"year": int(y) if y.isdigit() else str(y), "count": count} for y, count in sorted(yearly_counts.items())]
+        
+        return {
+            "domain": domain,
+            "trend": trend
+        }
+    except Exception as e:
+        logger.error(f"Error in get_domain_trends: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/export/tableau-data")
+def export_tableau_data():
+    """
+    Exports the stored papers in CSV format suitable for Tableau.
+    """
+    logger.info("Handling /export/tableau-data request")
+    try:
+        papers = load_papers()
+        
+        # Prepare CSV in memory
+        output = io.StringIO()
+        writer = csv.writer(output)
+        
+        # Header
+        writer.writerow(["title", "year", "domain", "keywords"])
+        
+        # Rows
+        for paper in papers:
+            title = paper.get("title", "Untitled")
+            year = paper.get("published_year", "Unknown")
+            domain = paper.get("domain", "Unknown")
+            keywords = ",".join(paper.get("keywords", []))
+            writer.writerow([title, year, domain, keywords])
+            
+        csv_data = output.getvalue()
+        output.close()
+        
+        return Response(content=csv_data, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=tableau_data.csv"})
+    except Exception as e:
+        logger.error(f"Error in export_tableau_data: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/analytics/top-keywords")
