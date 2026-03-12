@@ -4,6 +4,8 @@ from fastapi import FastAPI, Query, HTTPException
 import json
 from pathlib import Path
 from typing import List, Dict, Any
+from collections import Counter
+import re
 
 from utils import parse_arxiv_entry, load_papers, save_papers, summarize_abstract, logger
 
@@ -241,6 +243,44 @@ def get_keyword_trend(keyword: str = Query(..., description="Keyword to track tr
         }
     except Exception as e:
         logger.error(f"Error in get_keyword_trend: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
+@app.get("/analytics/top-keywords")
+def get_top_keywords(
+    limit: int = Query(10, description="Number of top keywords to return"),
+    min_length: int = Query(3, description="Minimum length of a keyword")
+):
+    """
+    Computes the most frequent keywords appearing in the titles of all stored papers.
+    """
+    logger.info(f"Handling /analytics/top-keywords request - Limit: {limit}")
+    try:
+        papers = load_papers()
+        stop_words = {
+            "the", "and", "of", "to", "in", "a", "is", "that", "for", "on", "it", 
+            "with", "as", "by", "are", "from", "an", "be", "this", "which", "or", 
+            "but", "not", "we", "can", "has", "have", "been", "was", "were", "their", 
+            "these", "also", "using"
+        }
+        
+        all_words = []
+        for paper in papers:
+            title = paper.get("title", "")
+            # Basic tokenization: remove punctuation, lowercase, split
+            words = re.findall(r'\b[a-z]{%d,}\b' % min_length, title.lower())
+            # Filter out common stop words
+            words = [w for w in words if w not in stop_words]
+            all_words.extend(words)
+            
+        word_counts = Counter(all_words)
+        top_keywords = [{"keyword": word, "count": count} for word, count in word_counts.most_common(limit)]
+        
+        return {
+            "count": len(top_keywords),
+            "top_keywords": top_keywords
+        }
+    except Exception as e:
+        logger.error(f"Error in get_top_keywords: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
 
