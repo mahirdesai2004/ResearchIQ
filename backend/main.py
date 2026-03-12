@@ -64,6 +64,41 @@ def get_arxiv_papers(
     except ET.ParseError as e:
         return {"error": f"Failed to parse arXiv response: {str(e)}"}
 
+@app.get("/system/stats")
+def get_system_stats():
+    """
+    Returns high-level statistics about the stored research papers.
+    """
+    logger.info("Handling /system/stats request")
+    try:
+        papers = load_papers()
+        total_papers = len(papers)
+        
+        years = set()
+        for p in papers:
+            y = p.get("published_year")
+            if y and y.isdigit():
+                years.add(int(y))
+                
+        if years:
+            earliest_year = str(min(years))
+            latest_year = str(max(years))
+            years_available = sorted(list(set(str(y) for y in years)))
+        else:
+            earliest_year = None
+            latest_year = None
+            years_available = []
+            
+        return {
+            "total_papers": total_papers,
+            "years_available": years_available,
+            "earliest_year": earliest_year,
+            "latest_year": latest_year
+        }
+    except Exception as e:
+        logger.error(f"Error in get_system_stats: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 @app.get("/analytics/yearly-count")
 def get_yearly_count():
     """
