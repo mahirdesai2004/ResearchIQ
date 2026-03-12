@@ -3,7 +3,9 @@ import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 import logging
+import os
 from pydantic import BaseModel, ValidationError
+from google import genai
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
@@ -86,19 +88,41 @@ def save_papers(papers: List[Dict[str, Any]]) -> None:
 
 def summarize_abstract(abstract: str) -> str:
     """
-    Simulates summarization by extracting the first 2-3 sentences.
-    Provides a placeholder for future LLM summarization.
+    Real LLM summarization extracting the core scientific contribution into 2-3 sentences.
+    Uses Google Gemini 2.5 Flash, falling back to Pro, with API key rotation on failure.
     """
     if not abstract or abstract == "No abstract available":
         return "No summary available."
     
-    # Simple heuristic to split sentences (not perfect, but works for simulation)
-    # Split by '. ' to avoid splitting on decimals or acronyms (mostly)
-    sentences = abstract.split('. ')
-    num_sentences = min(2, len(sentences)) # take up to 2 sentences
+    keys_env = os.environ.get("GEMINI_API_KEYS", "AIzaSyANz3d8_0V2uGKwxYd0aizv37UhjlNL7xw,AIzaSyC_BIEFWblIiuYyz-7G8aqNNy18ts-aa3M,AIzaSyAGcxL_oa3V_WaRnNl3MFmx32IKsM-mpkM,AIzaSyCuglTRVeSXPeM9YNq3rEkchodhHKAOdqg,AIzaSyB6JWt5xjNsNMQyOvoy5t2NRcKY5CS09Jw,AIzaSyCX7MBPGAYLLYh7KVTcQ1qMRaiS9U8xVnI,AIzaSyB3J3RRpZAC22ICJIiJfC0IXwDGls1bRlg")
+    api_keys = [k.strip() for k in keys_env.split(",") if k.strip()]
     
-    summary = '. '.join(sentences[:num_sentences])
-    if not summary.endswith('.'):
-        summary += '.'
-        
-    return summary
+    if not api_keys:
+        logger.warning("No Gemini API keys found. Falling back to simple truncation.")
+        sentences = abstract.split('. ')
+        return '. '.join(sentences[:min(2, len(sentences))]) + '.'
+
+    models_to_try = ['gemini-2.5-flash', 'gemini-2.5-pro']
+    prompt = f"Summarize the following scientific abstract into 2 or 3 sentences focusing strictly on the core contribution and findings:\n\n{abstract}"
+
+    # Try rotating keys
+    for api_key in api_keys:
+        client = genai.Client(api_key=api_key)
+        # Try both models per key
+        for model in models_to_try:
+            try:
+                response = client.models.generate_content(
+                    model=model,
+                    contents=prompt,
+                )
+                if response and response.text:
+                    logger.info(f"Successfully generated summary using {model} and key ending in ...{api_key[-4:]}")
+                    return response.text.strip().replace('\n', ' ')
+            except Exception as e:
+                logger.warning(f"Failed to generate summary with {model} (key ...{api_key[-4:]}): {e}")
+                continue # try next model
+                
+    # Fallback if ALL keys & models fail
+    logger.error("All Gemini API keys/models failed. Falling back to simple truncation.")
+    sentences = abstract.split('. ')
+    return '. '.join(sentences[:min(2, len(sentences))]) + '.'
