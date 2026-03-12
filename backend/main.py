@@ -140,3 +140,27 @@ def get_summaries():
         ]
     }
 
+@app.get("/analytics/keyword-trend")
+def get_keyword_trend(keyword: str = Query(..., description="Keyword to track trends for")):
+    """
+    Analyzes the frequency of a specific keyword across publication years.
+    Returns the yearly counts of the keyword appearing in titles or abstracts.
+    """
+    papers = load_papers()
+    yearly_counts = {}
+    
+    kw = keyword.lower()
+    for paper in papers:
+        title = paper.get("title", "").lower()
+        abstract = paper.get("abstract", "").lower()
+        
+        if kw in title or kw in abstract:
+            year = paper.get("published_year", "Unknown")
+            yearly_counts[year] = yearly_counts.get(year, 0) + 1
+            
+    return {
+        "keyword": keyword,
+        "yearly_counts": yearly_counts
+    }
+
+
