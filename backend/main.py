@@ -70,14 +70,19 @@ def get_yearly_count():
     Aggregate research papers by their published year.
     Returns a count of papers for each year.
     """
-    papers = load_papers()
-    yearly_counts = {}
-    
-    for paper in papers:
-        year = paper.get("published_year", "Unknown")
-        yearly_counts[year] = yearly_counts.get(year, 0) + 1
+    logger.info("Handling /analytics/yearly-count request")
+    try:
+        papers = load_papers()
+        yearly_counts = {}
         
-    return {"yearly_counts": yearly_counts}
+        for paper in papers:
+            year = paper.get("published_year", "Unknown")
+            yearly_counts[year] = yearly_counts.get(year, 0) + 1
+            
+        return {"yearly_counts": yearly_counts}
+    except Exception as e:
+        logger.error(f"Error in get_yearly_count: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/analytics/filter")
 def filter_papers(
@@ -88,28 +93,33 @@ def filter_papers(
     Filter stored papers by published year and/or keyword.
     Keyword search is case-insensitive and checks both title and abstract.
     """
-    papers = load_papers()
-    filtered_papers = []
-    
-    for paper in papers:
-        # Year filter
-        if year and paper.get("published_year") != year:
-            continue
-            
-        # Keyword filter
-        if keyword:
-            kw = keyword.lower()
-            title = paper.get("title", "").lower()
-            abstract = paper.get("abstract", "").lower()
-            if kw not in title and kw not in abstract:
+    logger.info(f"Handling /analytics/filter request - Year: {year}, Keyword: {keyword}")
+    try:
+        papers = load_papers()
+        filtered_papers = []
+        
+        for paper in papers:
+            # Year filter
+            if year and paper.get("published_year") != year:
                 continue
                 
-        filtered_papers.append(paper)
-        
-    return {
-        "count": len(filtered_papers),
-        "papers": filtered_papers
-    }
+            # Keyword filter
+            if keyword:
+                kw = keyword.lower()
+                title = paper.get("title", "").lower()
+                abstract = paper.get("abstract", "").lower()
+                if kw not in title and kw not in abstract:
+                    continue
+                    
+            filtered_papers.append(paper)
+            
+        return {
+            "count": len(filtered_papers),
+            "papers": filtered_papers
+        }
+    except Exception as e:
+        logger.error(f"Error in filter_papers: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/analytics/summaries")
 def get_summaries():
@@ -117,28 +127,34 @@ def get_summaries():
     Returns a list of papers including an LLM-ready summary.
     Summaries are generated and cached to avoid recomputation.
     """
-    papers = load_papers()
-    updated = False
-    
-    for paper in papers:
-        if "summary" not in paper:
-            paper["summary"] = summarize_abstract(paper.get("abstract", ""))
-            updated = True
-            
-    if updated:
-        save_papers(papers)
+    logger.info("Handling /analytics/summaries request")
+    try:
+        papers = load_papers()
+        updated = False
         
-    return {
-        "count": len(papers),
-        "papers": [
-            {
-                "title": p.get("title", "Untitled"),
-                "published_year": p.get("published_year", "Unknown"),
-                "summary": p.get("summary", "No summary available.")
-            }
-            for p in papers
-        ]
-    }
+        for paper in papers:
+            if "summary" not in paper:
+                paper["summary"] = summarize_abstract(paper.get("abstract", ""))
+                updated = True
+                
+        if updated:
+            save_papers(papers)
+            logger.info("New summaries generated and saved to papers.json")
+            
+        return {
+            "count": len(papers),
+            "papers": [
+                {
+                    "title": p.get("title", "Untitled"),
+                    "published_year": p.get("published_year", "Unknown"),
+                    "summary": p.get("summary", "No summary available.")
+                }
+                for p in papers
+            ]
+        }
+    except Exception as e:
+        logger.error(f"Error in get_summaries: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 @app.get("/analytics/keyword-trend")
 def get_keyword_trend(keyword: str = Query(..., description="Keyword to track trends for")):
@@ -146,21 +162,26 @@ def get_keyword_trend(keyword: str = Query(..., description="Keyword to track tr
     Analyzes the frequency of a specific keyword across publication years.
     Returns the yearly counts of the keyword appearing in titles or abstracts.
     """
-    papers = load_papers()
-    yearly_counts = {}
-    
-    kw = keyword.lower()
-    for paper in papers:
-        title = paper.get("title", "").lower()
-        abstract = paper.get("abstract", "").lower()
+    logger.info(f"Handling /analytics/keyword-trend request - Keyword: {keyword}")
+    try:
+        papers = load_papers()
+        yearly_counts = {}
         
-        if kw in title or kw in abstract:
-            year = paper.get("published_year", "Unknown")
-            yearly_counts[year] = yearly_counts.get(year, 0) + 1
+        kw = keyword.lower()
+        for paper in papers:
+            title = paper.get("title", "").lower()
+            abstract = paper.get("abstract", "").lower()
             
-    return {
-        "keyword": keyword,
-        "yearly_counts": yearly_counts
-    }
+            if kw in title or kw in abstract:
+                year = paper.get("published_year", "Unknown")
+                yearly_counts[year] = yearly_counts.get(year, 0) + 1
+                
+        return {
+            "keyword": keyword,
+            "yearly_counts": yearly_counts
+        }
+    except Exception as e:
+        logger.error(f"Error in get_keyword_trend: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
 
 
