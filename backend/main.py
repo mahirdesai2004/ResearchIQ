@@ -110,3 +110,33 @@ def filter_papers(
         "count": len(filtered_papers),
         "papers": filtered_papers
     }
+
+@app.get("/analytics/summaries")
+def get_summaries():
+    """
+    Returns a list of papers including an LLM-ready summary.
+    Summaries are generated and cached to avoid recomputation.
+    """
+    papers = load_papers()
+    updated = False
+    
+    for paper in papers:
+        if "summary" not in paper:
+            paper["summary"] = summarize_abstract(paper.get("abstract", ""))
+            updated = True
+            
+    if updated:
+        save_papers(papers)
+        
+    return {
+        "count": len(papers),
+        "papers": [
+            {
+                "title": p.get("title", "Untitled"),
+                "published_year": p.get("published_year", "Unknown"),
+                "summary": p.get("summary", "No summary available.")
+            }
+            for p in papers
+        ]
+    }
+
