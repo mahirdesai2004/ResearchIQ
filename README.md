@@ -8,6 +8,10 @@ Backend service for **ResearchIQ**, an LLM-based research analytics system. This
 *   **Language:** Python 3.12+
 *   **Dependency Management:** [uv](https://github.com/astral-sh/uv)
 *   **Data Source:** arXiv API
+*   **LLM Integration:** Google Gemini (2.5 Flash/Pro) via `google-genai`
+
+## Architecture
+See [docs/architecture.md](docs/architecture.md) for a detailed overview of the system design and data flow.
 
 ## Setup & Installation
 
@@ -88,15 +92,47 @@ Backend service for **ResearchIQ**, an LLM-based research analytics system. This
     curl "http://127.0.0.1:8000/analytics/keyword-trend?keyword=ai"
     ```
 
+### 7. System: Stats
+*   **URL:** `GET /system/stats`
+*   **Description:** Returns high-level statistics about the stored research dataset.
+*   **Example:**
+    ```bash
+    curl "http://127.0.0.1:8000/system/stats"
+    ```
+
+### 8. Analytics: Recent Papers
+*   **URL:** `GET /analytics/recent-papers`
+*   **Parameters:** `limit` (int, default: 10)
+*   **Description:** Returns the most recent papers sorted by published year descending.
+*   **Example:**
+    ```bash
+    curl "http://127.0.0.1:8000/analytics/recent-papers?limit=5"
+    ```
+
+### 9. Analytics: Top Keywords
+*   **URL:** `GET /analytics/top-keywords`
+*   **Parameters:**
+    *   `limit` (int, default: 10): Number of keywords.
+    *   `min_length` (int, default: 3): Minimum string length of a keyword.
+*   **Description:** Computes the most frequent keywords appearing in the titles of stored papers, discounting common stop words.
+*   **Example:**
+    ```bash
+    curl "http://127.0.0.1:8000/analytics/top-keywords?limit=5"
+    ```
+
 ## Project Structure
 
 ```
 .
 ├── README.md           # This file
-├── backend/
-│   ├── data/           # Local data storage
-│   │   └── papers.json # Saved paper metadata
+├── backend/            # API Core and Utils
+│   ├── data/           # Local data storage (papers.json)
 │   ├── main.py         # Main application and endpoints
+│   ├── utils.py        # Helper functions and dataset validation
 │   ├── pyproject.toml  # Project configuration and dependencies
 │   └── uv.lock         # Dependency lock file
+├── docs/               # System architecture and documentation
+│   └── architecture.md
+└── scripts/            # Verification scripts
+    └── verify_analytics.py
 ```
