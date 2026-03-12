@@ -119,6 +119,30 @@ def get_yearly_count():
         logger.error(f"Error in get_yearly_count: {e}", exc_info=True)
         raise HTTPException(status_code=500, detail="Internal server error")
 
+@app.get("/analytics/recent-papers")
+def get_recent_papers(limit: int = Query(10, description="Number of recent papers to return")):
+    """
+    Returns the most recent papers sorted by published_year descending.
+    """
+    logger.info(f"Handling /analytics/recent-papers request - Limit: {limit}")
+    try:
+        papers = load_papers()
+        # Sort by published_year descending (assuming year is string like '2024')
+        sorted_papers = sorted(
+            papers, 
+            key=lambda x: x.get("published_year", ""), 
+            reverse=True
+        )
+        recent = sorted_papers[:limit]
+        
+        return {
+            "count": len(recent),
+            "papers": recent
+        }
+    except Exception as e:
+        logger.error(f"Error in get_recent_papers: {e}", exc_info=True)
+        raise HTTPException(status_code=500, detail="Internal server error")
+
 @app.get("/analytics/filter")
 def filter_papers(
     year: str = Query(None, description="Filter by published year"),
