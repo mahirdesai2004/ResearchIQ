@@ -1,12 +1,20 @@
 import json
 import xml.etree.ElementTree as ET
 from pathlib import Path
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Optional
 import logging
+from pydantic import BaseModel, ValidationError
 
 # Configure logging
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
+
+class Paper(BaseModel):
+    title: str
+    abstract: str
+    published_year: str
+    source: str
+    summary: Optional[str] = None
 
 def parse_arxiv_entry(entry: ET.Element) -> Dict[str, Any]:
     """Helper to parse a single arXiv entry XML element."""
@@ -24,12 +32,20 @@ def parse_arxiv_entry(entry: ET.Element) -> Dict[str, Any]:
     published_elem = entry.find('atom:published', namespace)
     published_year = published_elem.text[:4] if published_elem is not None and published_elem.text else "Unknown"
     
-    return {
+    paper_dict = {
         "title": title,
         "abstract": abstract,
         "published_year": published_year,
         "source": "arxiv"
     }
+    
+    # Validate
+    try:
+        validated_paper = Paper(**paper_dict)
+        return validated_paper.model_dump(exclude_none=True)
+    except ValidationError as e:
+        logger.warning(f"Validation error on arXiv entry: {e}")
+        return paper_dict # Fallback to unvalidated dict if strict parsing isn't desired, or could raise
 
 def load_papers() -> List[Dict[str, Any]]:
     """Helper to safely load papers from local JSON storage."""
@@ -40,7 +56,19 @@ def load_papers() -> List[Dict[str, Any]]:
     
     try:
         with open(file_path, "r") as f:
-            return json.load(f)
+            raw_data = json.load(f)
+            
+        validated_data = []
+        for item in raw_data:
+            try:
+                # Enforce schema on load
+                validated_paper = Paper(**item)
+                validated_data.append(validated_paper.model_dump(exclude_none=True))
+            except ValidationError as e:
+                logger.warning(f"Dropping invalid paper record: {item}. Error: {e}")
+                
+        return validated_data
+        
     except json.JSONDecodeError as e:
         logger.error(f"Failed to decode papers.json: {e}")
         return []
