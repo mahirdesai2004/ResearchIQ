@@ -11,7 +11,7 @@ Backend service for **ResearchIQ**, an LLM-based research analytics system. This
 *   **LLM Integration:** Google Gemini (2.5 Flash/Pro) via `google-genai`
 
 ## Architecture
-See [docs/architecture.md](docs/architecture.md) for a detailed overview of the system design and data flow.
+The system has been transformed into a structured analytics pipeline. It uses batch ingestion to fetch and tag papers by domain, extracts key topics, and serves analytical insights (trends, stats) over the static dataset without real-time delays. See [docs/architecture.md](docs/architecture.md) for a detailed overview.
 
 ## Setup & Installation
 
@@ -50,11 +50,19 @@ See [docs/architecture.md](docs/architecture.md) for a detailed overview of the 
 *   **URL:** `GET /papers/arxiv`
 *   **Parameters:**
     *   `query` (string, default: "ai"): The search term.
-    *   `max_results` (int, default: 5): Number of papers to fetch.
-*   **Description:** Fetches papers from the arXiv API and appends them to `data/papers.json`.
+    *   `max_results` (int, default: 50): Number of papers to fetch.
+*   **Description:** Fetches papers from the arXiv API, tags their domain, deduplicates them, and appends them to `data/papers.json`.
 *   **Example:**
     ```bash
-    curl "http://127.0.0.1:8000/papers/arxiv?query=generative+ai&max_results=3"
+    curl "http://127.0.0.1:8000/papers/arxiv?query=generative+ai&max_results=50"
+    ```
+
+### 3. Batch Ingest ArXiv Papers
+*   **URL:** `POST /papers/arxiv/batch`
+*   **Description:** Fetches 50 papers for several predefined key topics (AI, ML, LLM, NLP, CV), tags their domains, and deduplicates them.
+*   **Example:**
+    ```bash
+    curl -X POST "http://127.0.0.1:8000/papers/arxiv/batch"
     ```
 
 ### 3. Analytics: Yearly Count
@@ -117,7 +125,7 @@ See [docs/architecture.md](docs/architecture.md) for a detailed overview of the 
     curl "http://127.0.0.1:8000/analytics/recent-papers?limit=5"
     ```
 
-### 9. Analytics: Top Keywords
+### 10. Analytics: Top Keywords
 *   **URL:** `GET /analytics/top-keywords`
 *   **Parameters:**
     *   `limit` (int, default: 10): Number of keywords.
@@ -126,6 +134,24 @@ See [docs/architecture.md](docs/architecture.md) for a detailed overview of the 
 *   **Example:**
     ```bash
     curl "http://127.0.0.1:8000/analytics/top-keywords?limit=5"
+    ```
+
+### 11. Analytics: Domain Trends
+*   **URL:** `GET /analytics/domain-trends`
+*   **Parameters:**
+    *   `domain` (string, required): Domain to track trends for (e.g., "ML").
+*   **Description:** Returns the yearly publication trend for a specific domain based on the tagged dataset.
+*   **Example:**
+    ```bash
+    curl "http://127.0.0.1:8000/analytics/domain-trends?domain=ML"
+    ```
+
+### 12. Export: Tableau Data
+*   **URL:** `GET /export/tableau-data`
+*   **Description:** Exports the stored papers in CSV format suitable for ingestion into Tableau.
+*   **Example:**
+    ```bash
+    curl -O -J "http://127.0.0.1:8000/export/tableau-data"
     ```
 
 ## Project Structure
