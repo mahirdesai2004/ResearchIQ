@@ -1,214 +1,54 @@
-import json
-import xml.etree.ElementTree as ET
-from pathlib import Path
-from typing import List, Dict, Any, Optional
-import logging
 import os
-import re
-import requests
-from dotenv import load_dotenv
-from pydantic import BaseModel, ValidationError, Field
+import logging
 from google import genai
+from dotenv import load_dotenv
 
 load_dotenv()
 
-# Configure logging
-logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
-logger = logging.getLogger(__name__)
+# Set up logging
+logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(name)s - %(levelname)s - %(message)s")
+logger = logging.getLogger("ResearchIQ")
 
-class Paper(BaseModel):
-    paper_id: str = "legacy_unknown"
-    title: str
-    abstract: str
-    published_year: str
-    source: str
-    arxiv_url: Optional[str] = None
-    pdf_url: Optional[str] = None
-    summary: Optional[str] = None
-    domain: str = "Unknown"
-    keywords: List[str] = Field(default_factory=list)
-
-def extract_keywords(title: str) -> List[str]:
-    stop_words = {"the", "and", "of", "to", "in", "a", "is", "that", "for", "on", "it", "with", "as", "by", "are", "from", "an", "be", "this", "which", "or", "but", "not", "we", "can", "has", "have", "been", "was", "were", "their", "these", "also", "using"}
-    words = re.findall(r'\b[a-z]{4,}\b', title.lower())
-    return list(set(w for w in words if w not in stop_words))
-
-def parse_arxiv_entry(entry: ET.Element, domain: str = "Unknown") -> Optional[Dict[str, Any]]:
-    """Helper to parse a single arXiv entry XML element."""
-    namespace = {'atom': 'http://www.w3.org/2005/Atom'}
-    
-    # Extract id
-    id_elem = entry.find('atom:id', namespace)
-    paper_id_raw = id_elem.text if id_elem is not None else None
-    paper_id = paper_id_raw.strip() if paper_id_raw else "unknown"
-    if "/abs/" in paper_id:
-        paper_id = paper_id.split("/abs/")[-1]
-
-    # Extract title
-    title_elem = entry.find('atom:title', namespace)
-    title = title_elem.text.strip().replace('\n', ' ') if title_elem is not None and title_elem.text else "Untitled"
-    
-    # Extract summary (abstract)
-    summary_elem = entry.find('atom:summary', namespace)
-    abstract = summary_elem.text.strip().replace('\n', ' ') if summary_elem is not None and summary_elem.text else "No abstract available"
-    
-    # Extract published year
-    published_elem = entry.find('atom:published', namespace)
-    published_year = published_elem.text[:4] if published_elem is not None and published_elem.text else "Unknown"
-    
-    # Build arXiv URLs
-    arxiv_url = f"https://arxiv.org/abs/{paper_id}" if paper_id != "unknown" else None
-    pdf_url = f"https://arxiv.org/pdf/{paper_id}.pdf" if paper_id != "unknown" else None
-
-    keywords = extract_keywords(title)
-
-    paper_dict = {
-        "paper_id": paper_id,
-        "title": title,
-        "abstract": abstract,
-        "published_year": published_year,
-        "source": "arxiv",
-        "arxiv_url": arxiv_url,
-        "pdf_url": pdf_url,
-        "domain": domain,
-        "keywords": keywords
-    }
-    
-    # Validate
-    try:
-        validated_paper = Paper(**paper_dict)
-        return validated_paper.model_dump(exclude_none=True)
-    except ValidationError as e:
-        logger.warning(f"Validation error on arXiv entry: {e}")
-        return None
-
-def fetch_arxiv_papers(query: str, max_results: int, domain: str = "Unknown") -> List[Dict[str, Any]]:
-    """Fetches and parses papers from arXiv API."""
-    base_url = "http://export.arxiv.org/api/query"
-    params = {
-        "search_query": f"all:{query}",
-        "start": 0,
-        "max_results": max_results
-    }
-    
-    response = requests.get(base_url, params=params)
-    response.raise_for_status()
-    
-    root = ET.fromstring(response.content)
-    namespace = {'atom': 'http://www.w3.org/2005/Atom'}
-    entries = root.findall('atom:entry', namespace)
-    
-    papers = []
-    for entry in entries:
-        parsed = parse_arxiv_entry(entry, domain=domain)
-        if parsed is not None:
-            papers.append(parsed)
-            
-    return papers
-
-def load_papers() -> List[Dict[str, Any]]:
-    """Helper to safely load papers from local JSON storage."""
-    file_path = Path("data/papers.json")
-    if not file_path.exists():
-        logger.warning("data/papers.json not found. Returning empty list.")
-        return []
-    
-    try:
-        with open(file_path, "r") as f:
-            raw_data = json.load(f)
-            
-        validated_data = []
-        for item in raw_data:
-            try:
-                # Enforce schema on load
-                validated_paper = Paper(**item)
-                validated_data.append(validated_paper.model_dump(exclude_none=True))
-            except ValidationError as e:
-                logger.warning(f"Dropping invalid paper record: {item}. Error: {e}")
-                
-        return validated_data
-        
-    except json.JSONDecodeError as e:
-        logger.error(f"Failed to decode papers.json: {e}")
-        return []
-
-def save_papers(papers: List[Dict[str, Any]]) -> None:
-    """Helper to safely save papers to local JSON storage."""
-    file_path = Path("data/papers.json")
-    # Ensure directory exists
-    file_path.parent.mkdir(parents=True, exist_ok=True)
-    try:
-        with open(file_path, "w") as f:
-            json.dump(papers, f, indent=2)
-    except Exception as e:
-        logger.error(f"Failed to save papers: {e}")
-
+api_keys_str = os.getenv("GEMINI_API_KEYS", "")
+API_KEYS = [k.strip() for k in api_keys_str.split(",") if k.strip()]
 _current_key_idx = 0
 
-def get_next_api_key() -> tuple[Optional[str], int]:
+def call_llm_with_rotation(prompt: str) -> str:
     global _current_key_idx
-    keys_env = os.environ.get("GEMINI_API_KEYS", "")
-    api_keys = [k.strip() for k in keys_env.split(",") if k.strip()]
-    if not api_keys:
-        return None, -1
-    
-    key = api_keys[_current_key_idx]
-    used_idx = _current_key_idx
-    _current_key_idx = (_current_key_idx + 1) % len(api_keys)
-    return key, used_idx
-
-def call_llm_with_rotation(text: str) -> str:
-    keys_env = os.environ.get("GEMINI_API_KEYS", "")
-    api_keys = [k.strip() for k in keys_env.split(",") if k.strip()]
-    
-    if not api_keys:
-        logger.warning("No API keys configured. Using fallback summary.")
-        sentences = text.split('. ')
-        return '. '.join(sentences[:min(2, len(sentences))]) + '.' if sentences else text
+    if not API_KEYS:
+        return "Summary not available."
         
-    models_to_try = ['gemini-2.5-flash', 'gemini-2.5-pro']
-    
-    # Try as many times as we have keys
-    for _ in range(len(api_keys)):
-        api_key, key_idx = get_next_api_key()
-        if not api_key:
-            break
+    for _ in range(len(API_KEYS)):
+        current_key = API_KEYS[_current_key_idx]
+        _current_key_idx = (_current_key_idx + 1) % len(API_KEYS)
+        
+        try:
+            client = genai.Client(api_key=current_key)
+            # using gemini-2.5-flash as default
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+            )
+            return response.text
+        except Exception as e:
+            logger.warning(f"LLM failed with a key: {e}")
+            continue
             
-        logger.info(f"Attempting LLM call using API key index {key_idx}")
-        client = genai.Client(api_key=api_key)
-        
-        for model in models_to_try:
-            try:
-                # Agentic prompt for structured research analysis
-                prompt = (
-                    "You are an AI Research Assistant. Analyze the following scientific abstract and provide a structured, "
-                    "concise summary (max 3 sentences). Focus on: \n"
-                    "1. The primary problem addressed.\n"
-                    "2. The core technical contribution.\n"
-                    "3. The significance of the results.\n\n"
-                    f"Abstract: {text}\n\n"
-                    "Format: Return only the analysis text, starting with 'AI Analysis:'"
-                )
-                response = client.models.generate_content(
-                    model=model,
-                    contents=prompt,
-                )
-                if response and response.text:
-                    logger.info(f"Successfully generated summary using model {model} and key index {key_idx}")
-                    return response.text.strip().replace('\n', ' ')
-            except Exception as e:
-                logger.error(f"Failed to generate summary with model {model} using key index {key_idx}: {e}")
-                continue
-                
-    logger.error("All API keys and models failed. Using fallback summary.")
-    sentences = text.split('. ')
-    return '. '.join(sentences[:min(2, len(sentences))]) + '.' if sentences else text
+    return "Summary not available."
 
 def summarize_abstract(abstract: str) -> str:
-    """
-    Real LLM summarization wrapper extracting core contribution.
-    """
-    if not abstract or abstract == "No abstract available":
-        return "No summary available."
+    if not API_KEYS:
+        # Fallback to first 3 sentences
+        sentences = abstract.split('.')
+        return '.'.join(sentences[:3]).strip() + "." if sentences else abstract
         
-    return call_llm_with_rotation(abstract)
+    prompt = (
+        "You are an AI Research Assistant. Analyze the following scientific abstract and provide a structured, "
+        "concise summary (max 3 sentences). Focus on: \n"
+        "1. The primary problem addressed.\n"
+        "2. The core technical contribution.\n"
+        "3. The significance of the results.\n\n"
+        f"Abstract: {abstract}\n\n"
+        "Format: Return only the analysis text, starting with 'AI Analysis:'"
+    )
+    return call_llm_with_rotation(prompt)

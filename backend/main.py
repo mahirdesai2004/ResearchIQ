@@ -1,16 +1,23 @@
-import requests
-import xml.etree.ElementTree as ET
-from fastapi import FastAPI, Query, HTTPException, Response
+from fastapi import FastAPI, Query, HTTPException, Depends
+from fastapi.responses import StreamingResponse
+from fastapi.middleware.cors import CORSMiddleware
+from sqlalchemy.orm import Session
+from sqlalchemy import func
+from pydantic import BaseModel
 import csv
 import io
-from fastapi.middleware.cors import CORSMiddleware
-import json
-from pathlib import Path
-from typing import List, Dict, Any
-from collections import Counter
-import re
+import logging
+from datetime import datetime
+from typing import List, Optional, Dict, Any
 
-from utils import parse_arxiv_entry, load_papers, save_papers, summarize_abstract, fetch_arxiv_papers, logger
+from database import engine, SessionLocal, Base, PaperModel, get_db
+from arxiv_ingest import ingest_papers_from_arxiv
+from ranking import rank_papers
+from purpose_handlers import diversify_by_year, extract_related_keywords
+from utils import logger, summarize_abstract
+
+# Initialize DB tables
+Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="ResearchIQ Backend")
 
@@ -22,405 +29,300 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# -------------------------------------------------------------------
+# Input Models
+# -------------------------------------------------------------------
+class ResearchQuery(BaseModel):
+    topic: str
+    purpose: str  # "literature review", "quick overview", "deep dive"
+    num_papers: int = 50
+
+# -------------------------------------------------------------------
+# In-memory cache to avoid repeated arXiv fetches for the same topic
+# -------------------------------------------------------------------
+fetch_cache: Dict[str, datetime] = {}
+
+# -------------------------------------------------------------------
+# Health Check
+# -------------------------------------------------------------------
+@app.get("/health")
+def health_check():
+    return {"status": "ok"}
+
 @app.get("/")
 def read_root():
     return {"message": "Welcome to ResearchIQ API"}
 
-def get_domain_from_query(query: str) -> str:
-    query_lower = query.lower()
-    mapping = {
-        "artificial intelligence": "AI",
-        "machine learning": "ML",
-        "large language models": "LLM",
-        "nlp": "NLP",
-        "computer vision": "CV"
-    }
-    for k, v in mapping.items():
-        if k in query_lower:
-            return v
-    return "Other"
-
+# -------------------------------------------------------------------
+# GET /papers/arxiv – Fetch and ingest papers from arXiv
+# -------------------------------------------------------------------
 @app.get("/papers/arxiv")
 def get_arxiv_papers(
     query: str = Query("ai", description="Search query for arXiv"),
-    max_results: int = Query(50, description="Number of results to return")
+    max_results: int = Query(50, description="Number of results to fetch"),
 ):
-    """
-    Fetch research papers from arXiv API.
-    """
-    logger.info(f"Handling /papers/arxiv request - Query: {query}, Max Results: {max_results}")
-    
+    logger.info(f"GET /papers/arxiv – query='{query}', max_results={max_results}")
     try:
-        domain = get_domain_from_query(query)
-        logger.info(f"Assigned domain '{domain}' for query '{query}'")
-        papers = fetch_arxiv_papers(query, max_results, domain=domain)
-        
-        # Save to local file
-        existing_data = load_papers()
-        
-        # Deduplication using paper_id
-        existing_ids = {p.get("paper_id") for p in existing_data if p.get("paper_id")}
-        
-        added_count = 0
-        for p in papers:
-            if p.get("paper_id") not in existing_ids:
-                existing_data.append(p)
-                added_count += 1
-        
-        if added_count > 0:
-            save_papers(existing_data)
-            
-        logger.info(f"Successfully fetched {len(papers)} papers, added {added_count} new unique papers.")
-            
+        result = ingest_papers_from_arxiv(query, max_results=max_results)
+        fetch_cache[query.lower()] = datetime.now()
+        logger.info(f"GET /papers/arxiv – fetched={result['fetched']}, added={result['added']}")
         return {
             "query": query,
-            "domain": domain,
-            "count": added_count,
-            "fetched": len(papers),
-            "papers": papers,
-            "message": f"Added {added_count} new papers to data/papers.json"
+            "fetched": result["fetched"],
+            "added": result["added"],
+            "message": f"Added {result['added']} new papers"
         }
-        
-    except requests.RequestException as e:
-        logger.error(f"Failed to fetch from arXiv: {str(e)}")
-        return {"error": f"Failed to fetch from arXiv: {str(e)}"}
-    except ET.ParseError as e:
-        logger.error(f"Failed to parse arXiv response: {str(e)}")
-        return {"error": f"Failed to parse arXiv response: {str(e)}"}
+    except Exception as e:
+        logger.error(f"GET /papers/arxiv failed: {e}")
+        raise HTTPException(status_code=503, detail=f"arXiv fetch failed: {str(e)}")
 
+# -------------------------------------------------------------------
+# POST /papers/arxiv/batch – Batch ingest for predefined domains
+# -------------------------------------------------------------------
 @app.post("/papers/arxiv/batch")
-def batch_ingest_arxiv_papers():
-    """
-    Batch ingest papers for a predefined set of key topics.
-    """
-    logger.info("Handling /papers/arxiv/batch request")
-    topics = [
-        "artificial intelligence", 
-        "machine learning", 
-        "large language models", 
-        "nlp", 
-        "computer vision"
-    ]
-    
-    total_fetched = 0
-    total_added = 0
-    
-    try:
-        existing_data = load_papers()
-        existing_ids = {p.get("paper_id") for p in existing_data if p.get("paper_id")}
-        
-        for topic in topics:
-            domain = get_domain_from_query(topic)
-            logger.info(f"Batch fetching for topic '{topic}' -> Domain '{domain}'")
-            papers = fetch_arxiv_papers(query=topic, max_results=50, domain=domain)
-            total_fetched += len(papers)
-            
-            for p in papers:
-                if p.get("paper_id") not in existing_ids:
-                    existing_data.append(p)
-                    existing_ids.add(p.get("paper_id"))
-                    total_added += 1
-                    
-        if total_added > 0:
-            save_papers(existing_data)
-            
-        logger.info(f"Batch ingestion complete. Fetched: {total_fetched}, Added: {total_added}")
-        return {
-            "message": "Batch ingestion complete",
-            "topics_processed": topics,
-            "total_fetched": total_fetched,
-            "total_added": total_added
-        }
-    except Exception as e:
-        logger.error(f"Error during batch ingestion: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error during batch ingestion")
+def trigger_batch_ingestion():
+    domains = ["AI", "ML", "NLP", "LLM", "CV"]
+    logger.info("POST /papers/arxiv/batch – starting batch ingestion")
 
-@app.get("/system/stats")
-def get_system_stats():
-    """
-    Returns high-level statistics about the stored research papers.
-    """
-    logger.info("Handling /system/stats request")
-    try:
-        papers = load_papers()
-        total_papers = len(papers)
-        
-        years = {}
-        domains = {}
-        
-        for p in papers:
-            # Year distribution
-            y = p.get("published_year")
-            if y and y.isdigit():
-                y_int = int(y)
-                years[y_int] = years.get(y_int, 0) + 1
-                
-            # Domain distribution
-            d = p.get("domain", "Unknown")
-            domains[d] = domains.get(d, 0) + 1
-                
-        if years:
-            earliest_year = min(years.keys())
-            latest_year = max(years.keys())
-            years_available = sorted(list(years.keys()))
-        else:
-            earliest_year = None
-            latest_year = None
-            years_available = []
-            
-        return {
-            "total_papers": total_papers,
-            "years_available": years_available,
-            "earliest_year": earliest_year,
-            "latest_year": latest_year,
-            "papers_per_domain": domains,
-            "year_distribution": years
-        }
-    except Exception as e:
-        logger.error(f"Error in get_system_stats: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
+    results_list: List[Dict[str, Any]] = []
+    for d in domains:
+        try:
+            res = ingest_papers_from_arxiv(d, max_results=50)
+            fetch_cache[d.lower()] = datetime.now()
+            results_list.append(res)
+            logger.info(f"  Batch '{d}': fetched={res['fetched']}, added={res['added']}")
+        except Exception as e:
+            logger.error(f"  Batch '{d}' failed: {e}")
+            results_list.append({"topic": d, "fetched": 0, "added": 0, "error": str(e)})
 
-@app.get("/analytics/yearly-count")
-def get_yearly_count():
-    """
-    Aggregate research papers by their published year.
-    Returns a count of papers for each year.
-    """
-    logger.info("Handling /analytics/yearly-count request")
-    try:
-        papers = load_papers()
-        yearly_counts = {}
-        
-        for paper in papers:
-            year = paper.get("published_year", "Unknown")
-            yearly_counts[year] = yearly_counts.get(year, 0) + 1
-            
-        return {"yearly_counts": yearly_counts}
-    except Exception as e:
-        logger.error(f"Error in get_yearly_count: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
+    return {
+        "message": "Batch ingestion completed",
+        "results": results_list
+    }
 
-@app.get("/analytics/recent-papers")
-def get_recent_papers(limit: int = Query(10, description="Number of recent papers to return")):
-    """
-    Returns the most recent papers sorted by published_year descending.
-    """
-    logger.info(f"Handling /analytics/recent-papers request - Limit: {limit}")
-    try:
-        papers = load_papers()
-        # Sort by published_year descending (assuming year is string like '2024')
-        sorted_papers = sorted(
-            papers, 
-            key=lambda x: x.get("published_year", ""), 
-            reverse=True
-        )
-        recent = sorted_papers[:limit]
-        
-        return {
-            "count": len(recent),
-            "papers": recent
-        }
-    except Exception as e:
-        logger.error(f"Error in get_recent_papers: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
+# -------------------------------------------------------------------
+# POST /research/query – Context-aware research query
+# -------------------------------------------------------------------
+@app.post("/research/query")
+def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
+    topic_lower = req.topic.lower()
+    logger.info(f"POST /research/query – topic='{req.topic}', purpose='{req.purpose}', num_papers={req.num_papers}")
 
+    # Find relevant papers using ILIKE-style matching on title OR abstract
+    all_papers = db.query(PaperModel).all()
+    relevant_papers: List[Any] = []
+
+    for p in all_papers:
+        title = (p.title or "").lower()
+        abstract = (p.abstract or "").lower()
+        if topic_lower in title or topic_lower in abstract:
+            relevant_papers.append(p)
+
+    local_count = len(relevant_papers)
+    logger.info(f"  Local matches: {local_count}")
+
+    # Fetch from arXiv if not enough and not fetched recently
+    current_time = datetime.now()
+    last_fetch: Optional[datetime] = fetch_cache.get(topic_lower)
+    should_fetch = local_count < req.num_papers and (
+        last_fetch is None or (current_time - last_fetch).total_seconds() > 3600
+    )
+
+    if should_fetch:
+        logger.info(f"  Fetching from arXiv for '{req.topic}'")
+        max_res = max(100, req.num_papers * 2)
+        try:
+            ingest_papers_from_arxiv(req.topic, max_results=max_res)
+            fetch_cache[topic_lower] = datetime.now()
+
+            # Re-query after ingestion
+            all_papers = db.query(PaperModel).all()
+            relevant_papers = []
+            for p in all_papers:
+                title = (p.title or "").lower()
+                abstract = (p.abstract or "").lower()
+                if topic_lower in title or topic_lower in abstract:
+                    relevant_papers.append(p)
+            logger.info(f"  After fetch, local matches: {len(relevant_papers)}")
+        except Exception as e:
+            logger.error(f"  arXiv fetch failed: {e}")
+
+    # Rank all relevant papers
+    ranked_papers = rank_papers(req.topic, relevant_papers)
+
+    # Apply purpose-aware logic
+    purpose_lower = req.purpose.lower()
+    response_data: Dict[str, Any] = {"topic": req.topic, "purpose": req.purpose}
+
+    safe_ranked: List[Any] = list(ranked_papers) if ranked_papers else []
+
+    if purpose_lower == "literature review":
+        final_papers = diversify_by_year(safe_ranked, req.num_papers)
+    elif purpose_lower == "quick overview":
+        final_papers = safe_ranked[:5]
+        for p in final_papers:
+            if not p.summary:
+                p.summary = summarize_abstract(p.abstract or "")
+                db.commit()
+    elif purpose_lower == "deep dive":
+        final_papers = safe_ranked[:req.num_papers]
+        top_keywords = extract_related_keywords(final_papers)
+        response_data["related_keywords"] = top_keywords
+    else:
+        final_papers = safe_ranked[:req.num_papers]
+
+    response_data["count"] = len(final_papers)
+    response_data["papers"] = final_papers
+
+    logger.info(f"  Returning {len(final_papers)} papers")
+    return response_data
+
+# -------------------------------------------------------------------
+# GET /analytics/filter – Filter stored papers
+# -------------------------------------------------------------------
 @app.get("/analytics/filter")
 def filter_papers(
-    year: str = Query(None, description="Filter by published year"),
-    keyword: str = Query(None, description="Filter by keyword in title or abstract"),
-    limit: int = Query(20, description="Number of results to return"),
-    offset: int = Query(0, description="Number of results to skip")
+    q: Optional[str] = Query(None, description="Search query for full-text filtering"),
+    year_min: Optional[int] = Query(None),
+    year_max: Optional[int] = Query(None),
+    domains: Optional[str] = Query(None, description="Comma-separated domains"),
+    keyword: Optional[str] = Query(None, description="Keyword filter (legacy support)"),
+    limit: int = Query(20),
+    offset: int = Query(0),
+    db: Session = Depends(get_db)
 ):
-    """
-    Filter stored papers by published year and/or keyword.
-    """
-    logger.info(f"Handling /analytics/filter request - Year: {year}, Keyword: {keyword}")
-    try:
-        papers = load_papers()
+    logger.info(f"GET /analytics/filter – q={q}, keyword={keyword}, year_min={year_min}, year_max={year_max}")
+    query = db.query(PaperModel)
 
-        filtered_papers = []
-        for paper in papers:
-            if year and paper.get("published_year") != year:
+    if year_min:
+        query = query.filter(PaperModel.year >= year_min)
+    if year_max:
+        query = query.filter(PaperModel.year <= year_max)
+
+    papers = query.all()
+
+    # Filter by domain
+    if domains:
+        domain_list = [d.strip().lower() for d in domains.split(",") if d.strip()]
+        papers = [
+            p for p in papers
+            if any(d in [x.lower() for x in (p.domains or [])] for d in domain_list)
+        ]
+
+    # Full-text search: support both 'q' and legacy 'keyword' param
+    search_term = q or keyword
+    if search_term:
+        papers = rank_papers(search_term, papers)
+
+    paper_list: List[Any] = list(papers) if papers else []
+    paginated = paper_list[offset:offset + limit]
+
+    logger.info(f"  Found {len(paper_list)} papers, returning {len(paginated)}")
+    return {
+        "count": len(paper_list),
+        "returned": len(paginated),
+        "papers": paginated
+    }
+
+# -------------------------------------------------------------------
+# GET /analytics/yearly-count
+# -------------------------------------------------------------------
+@app.get("/analytics/yearly-count")
+def get_yearly_count(domain: Optional[str] = None, db: Session = Depends(get_db)):
+    papers = db.query(PaperModel).all()
+    yearly_counts: Dict[int, int] = {}
+
+    for p in papers:
+        if domain:
+            p_domains = [d.lower() for d in (p.domains or [])]
+            if domain.lower() not in p_domains:
                 continue
-            if keyword:
-                kw = keyword.lower()
-                title = paper.get("title", "").lower()
-                abstract = paper.get("abstract", "").lower()
-                if kw not in title and kw not in abstract:
-                    continue
-            filtered_papers.append(paper)
+        y = p.year
+        if y is not None:
+            yearly_counts[y] = yearly_counts.get(y, 0) + 1
 
-        paginated_papers = filtered_papers[offset:offset+limit]
-        logger.info(f"Found {len(filtered_papers)} matching papers, returning {len(paginated_papers)}.")
+    return {"domain": domain or "all", "yearly_counts": yearly_counts}
 
-        return {
-            "count": len(filtered_papers),
-            "returned": len(paginated_papers),
-            "papers": paginated_papers
-        }
-    except Exception as e:
-        logger.error(f"Error in filter_papers: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
-
-@app.get("/analytics/summaries")
-def get_summaries():
-    """
-    Returns a list of papers including an LLM-ready summary.
-    Summaries are generated and cached to avoid recomputation.
-    """
-    logger.info("Handling /analytics/summaries request")
-    try:
-        papers = load_papers()
-        updated = False
-        
-        for paper in papers:
-            if "summary" not in paper:
-                paper["summary"] = summarize_abstract(paper.get("abstract", ""))
-                updated = True
-                
-        if updated:
-            save_papers(papers)
-            logger.info("New summaries generated and saved to papers.json")
-            
-        return {
-            "count": len(papers),
-            "papers": [
-                {
-                    "title": p.get("title", "Untitled"),
-                    "published_year": p.get("published_year", "Unknown"),
-                    "summary": p.get("summary", "No summary available.")
-                }
-                for p in papers
-            ]
-        }
-    except Exception as e:
-        logger.error(f"Error in get_summaries: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
-
+# -------------------------------------------------------------------
+# GET /analytics/keyword-trend
+# -------------------------------------------------------------------
 @app.get("/analytics/keyword-trend")
-def get_keyword_trend(keyword: str = Query(..., description="Keyword to track trends for")):
-    """
-    Analyzes the frequency of a specific keyword across publication years.
-    Returns the yearly counts of the keyword appearing in titles or abstracts.
-    """
-    logger.info(f"Handling /analytics/keyword-trend request - Keyword: {keyword}")
-    try:
-        papers = load_papers()
-        yearly_counts = {}
-        
-        kw = keyword.lower()
-        for paper in papers:
-            title = paper.get("title", "").lower()
-            abstract = paper.get("abstract", "").lower()
-            
-            if kw in title or kw in abstract:
-                year = paper.get("published_year", "Unknown")
-                yearly_counts[year] = yearly_counts.get(year, 0) + 1
-                
-        return {
-            "keyword": keyword,
-            "yearly_counts": yearly_counts
-        }
-    except Exception as e:
-        logger.error(f"Error in get_keyword_trend: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
+def get_keyword_trend(keyword: str = Query(...), db: Session = Depends(get_db)):
+    kw = keyword.lower()
+    papers = db.query(PaperModel).all()
+    yearly_counts: Dict[int, int] = {}
 
-@app.get("/analytics/domain-trends")
-def get_domain_trends(domain: str = Query(..., description="Domain to track trends for")):
-    """
-    Returns the yearly publication trend for a specific domain.
-    """
-    logger.info(f"Handling /analytics/domain-trends request - Domain: {domain}")
-    try:
-        papers = load_papers()
-        yearly_counts = {}
-        
-        target_domain = domain.lower()
-        for paper in papers:
-            p_domain = paper.get("domain", "").lower()
-            if p_domain == target_domain:
-                year = paper.get("published_year", "Unknown")
-                yearly_counts[year] = yearly_counts.get(year, 0) + 1
-                
-        # Format as list of dicts
-        trend = [{"year": int(y) if y.isdigit() else str(y), "count": count} for y, count in sorted(yearly_counts.items())]
-        
-        return {
-            "domain": domain,
-            "trend": trend
-        }
-    except Exception as e:
-        logger.error(f"Error in get_domain_trends: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
+    for p in papers:
+        kw_list = [k.lower() for k in (p.keywords or [])]
+        title = (p.title or "").lower()
+        abstract = (p.abstract or "").lower()
+        if kw in kw_list or kw in title or kw in abstract:
+            y = p.year
+            if y is not None:
+                yearly_counts[y] = yearly_counts.get(y, 0) + 1
 
+    return {"keyword": keyword, "yearly_counts": yearly_counts}
+
+# -------------------------------------------------------------------
+# GET /export/tableau-data – CSV streaming export
+# -------------------------------------------------------------------
 @app.get("/export/tableau-data")
-def export_tableau_data():
-    """
-    Exports the stored papers in CSV format suitable for Tableau.
-    """
-    logger.info("Handling /export/tableau-data request")
-    try:
-        papers = load_papers()
-        
-        # Prepare CSV in memory
+def export_tableau_data(
+    domain: Optional[str] = None,
+    year_min: Optional[int] = None,
+    year_max: Optional[int] = None,
+    db: Session = Depends(get_db)
+):
+    query = db.query(PaperModel)
+    if year_min:
+        query = query.filter(PaperModel.year >= year_min)
+    if year_max:
+        query = query.filter(PaperModel.year <= year_max)
+
+    papers = query.all()
+
+    def generate_csv():
         output = io.StringIO()
         writer = csv.writer(output)
-        
-        # Header
         writer.writerow(["title", "year", "domain", "keywords"])
-        
-        # Rows
-        for paper in papers:
-            title = paper.get("title", "Untitled")
-            year = paper.get("published_year", "Unknown")
-            domain = paper.get("domain", "Unknown")
-            keywords = ",".join(paper.get("keywords", []))
-            writer.writerow([title, year, domain, keywords])
-            
-        csv_data = output.getvalue()
-        output.close()
-        
-        return Response(content=csv_data, media_type="text/csv", headers={"Content-Disposition": "attachment; filename=tableau_data.csv"})
-    except Exception as e:
-        logger.error(f"Error in export_tableau_data: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
+        yield output.getvalue()
+        output.seek(0)
+        output.truncate(0)
 
-@app.get("/analytics/top-keywords")
-def get_top_keywords(
-    limit: int = Query(10, description="Number of top keywords to return"),
-    min_length: int = Query(3, description="Minimum length of a keyword")
-):
-    """
-    Computes the most frequent keywords appearing in the titles of all stored papers.
-    """
-    logger.info(f"Handling /analytics/top-keywords request - Limit: {limit}")
-    try:
-        papers = load_papers()
-        stop_words = {
-            "the", "and", "of", "to", "in", "a", "is", "that", "for", "on", "it", 
-            "with", "as", "by", "are", "from", "an", "be", "this", "which", "or", 
-            "but", "not", "we", "can", "has", "have", "been", "was", "were", "their", 
-            "these", "also", "using"
-        }
-        
-        all_words = []
-        for paper in papers:
-            title = paper.get("title", "")
-            # Basic tokenization: remove punctuation, lowercase, split
-            words = re.findall(r'\b[a-z]{%d,}\b' % min_length, title.lower())
-            # Filter out common stop words
-            words = [w for w in words if w not in stop_words]
-            all_words.extend(words)
-            
-        word_counts = Counter(all_words)
-        top_keywords = [{"keyword": word, "count": count} for word, count in word_counts.most_common(limit)]
-        
-        return {
-            "count": len(top_keywords),
-            "top_keywords": top_keywords
-        }
-    except Exception as e:
-        logger.error(f"Error in get_top_keywords: {e}", exc_info=True)
-        raise HTTPException(status_code=500, detail="Internal server error")
+        for p in papers:
+            if domain and domain.lower() not in [d.lower() for d in (p.domains or [])]:
+                continue
+            p_domain = (p.domains or ["Unknown"])[0]
+            keywords_str = ",".join(p.keywords or [])
+            writer.writerow([p.title, p.year, p_domain, keywords_str])
+            yield output.getvalue()
+            output.seek(0)
+            output.truncate(0)
 
+    return StreamingResponse(
+        generate_csv(),
+        media_type="text/csv",
+        headers={"Content-Disposition": "attachment; filename=tableau_export.csv"}
+    )
 
+# -------------------------------------------------------------------
+# GET /system/stats – System statistics
+# -------------------------------------------------------------------
+@app.get("/system/stats")
+def get_system_stats(db: Session = Depends(get_db)):
+    papers = db.query(PaperModel).all()
+    total = len(papers)
+    domains_count: Dict[str, int] = {}
+    years_count: Dict[int, int] = {}
+
+    for p in papers:
+        for d in (p.domains or []):
+            domains_count[d] = domains_count.get(d, 0) + 1
+        if p.year is not None:
+            years_count[p.year] = years_count.get(p.year, 0) + 1
+
+    return {
+        "total_papers": total,
+        "papers_per_domain": domains_count,
+        "year_distribution": years_count
+    }
