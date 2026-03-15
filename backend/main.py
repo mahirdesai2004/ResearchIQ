@@ -7,12 +7,13 @@ from pydantic import BaseModel
 import csv
 import io
 import logging
+import threading
 from datetime import datetime
 from typing import List, Optional, Dict, Any
 
 from database import engine, SessionLocal, Base, PaperModel, get_db
 from arxiv_ingest import ingest_papers_from_arxiv
-from ranking import rank_papers
+from ranking import rank_papers, normalize_query, get_query_variants
 from purpose_handlers import diversify_by_year, extract_related_keywords
 from utils import logger, summarize_abstract
 
@@ -38,9 +39,48 @@ class ResearchQuery(BaseModel):
     num_papers: int = 50
 
 # -------------------------------------------------------------------
-# In-memory cache to avoid repeated arXiv fetches for the same topic
+# In-memory cache to avoid repeated arXiv fetches (1 hour TTL)
 # -------------------------------------------------------------------
 fetch_cache: Dict[str, datetime] = {}
+
+def _is_cache_valid(key: str) -> bool:
+    last = fetch_cache.get(key)
+    if last is None:
+        return False
+    return (datetime.now() - last).total_seconds() < 3600
+
+# -------------------------------------------------------------------
+# Auto-seed: ensure DB has enough papers on startup
+# -------------------------------------------------------------------
+def _auto_seed():
+    """If DB has fewer than 100 papers, trigger batch ingestion in background."""
+    try:
+        db = SessionLocal()
+        count = db.query(func.count(PaperModel.id)).scalar() or 0
+        db.close()
+
+        if count < 100:
+            logger.info(f"Auto-seed: DB has only {count} papers. Triggering batch ingestion...")
+            seed_topics = [
+                "artificial intelligence",
+                "machine learning",
+                "natural language processing",
+                "computer vision",
+            ]
+            for topic in seed_topics:
+                try:
+                    ingest_papers_from_arxiv(topic, max_results=50)
+                    fetch_cache[topic] = datetime.now()
+                except Exception as e:
+                    logger.warning(f"Auto-seed failed for '{topic}': {e}")
+            logger.info("Auto-seed complete.")
+        else:
+            logger.info(f"Auto-seed: DB has {count} papers. No seeding needed.")
+    except Exception as e:
+        logger.error(f"Auto-seed error: {e}")
+
+# Run auto-seed in background thread so startup isn't blocked
+threading.Thread(target=_auto_seed, daemon=True).start()
 
 # -------------------------------------------------------------------
 # Health Check
@@ -54,18 +94,24 @@ def read_root():
     return {"message": "Welcome to ResearchIQ API"}
 
 # -------------------------------------------------------------------
-# GET /papers/arxiv – Fetch and ingest papers from arXiv
+# GET /papers/arxiv
 # -------------------------------------------------------------------
 @app.get("/papers/arxiv")
 def get_arxiv_papers(
     query: str = Query("ai", description="Search query for arXiv"),
     max_results: int = Query(50, description="Number of results to fetch"),
 ):
-    logger.info(f"GET /papers/arxiv – query='{query}', max_results={max_results}")
+    normalized = normalize_query(query)
+    logger.info(f"GET /papers/arxiv – query='{query}' (normalized='{normalized}'), max_results={max_results}")
+
+    if _is_cache_valid(normalized):
+        logger.info(f"  Skipping fetch – cached within last hour")
+        return {"query": query, "fetched": 0, "added": 0, "message": "Recently fetched, using cache"}
+
     try:
-        result = ingest_papers_from_arxiv(query, max_results=max_results)
-        fetch_cache[query.lower()] = datetime.now()
-        logger.info(f"GET /papers/arxiv – fetched={result['fetched']}, added={result['added']}")
+        result = ingest_papers_from_arxiv(normalized, max_results=max_results)
+        fetch_cache[normalized] = datetime.now()
+        logger.info(f"  fetched={result['fetched']}, added={result['added']}")
         return {
             "query": query,
             "fetched": result["fetched"],
@@ -77,18 +123,27 @@ def get_arxiv_papers(
         raise HTTPException(status_code=503, detail=f"arXiv fetch failed: {str(e)}")
 
 # -------------------------------------------------------------------
-# POST /papers/arxiv/batch – Batch ingest for predefined domains
+# POST /papers/arxiv/batch
 # -------------------------------------------------------------------
 @app.post("/papers/arxiv/batch")
 def trigger_batch_ingestion():
-    domains = ["AI", "ML", "NLP", "LLM", "CV"]
+    domains = [
+        "artificial intelligence",
+        "machine learning",
+        "natural language processing",
+        "large language model",
+        "computer vision",
+    ]
     logger.info("POST /papers/arxiv/batch – starting batch ingestion")
 
     results_list: List[Dict[str, Any]] = []
     for d in domains:
+        if _is_cache_valid(d):
+            results_list.append({"topic": d, "fetched": 0, "added": 0, "skipped": "cached"})
+            continue
         try:
             res = ingest_papers_from_arxiv(d, max_results=50)
-            fetch_cache[d.lower()] = datetime.now()
+            fetch_cache[d] = datetime.now()
             results_list.append(res)
             logger.info(f"  Batch '{d}': fetched={res['fetched']}, added={res['added']}")
         except Exception as e:
@@ -105,56 +160,51 @@ def trigger_batch_ingestion():
 # -------------------------------------------------------------------
 @app.post("/research/query")
 def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
-    topic_lower = req.topic.lower()
-    logger.info(f"POST /research/query – topic='{req.topic}', purpose='{req.purpose}', num_papers={req.num_papers}")
+    normalized = normalize_query(req.topic)
+    logger.info(f"POST /research/query – topic='{req.topic}' (normalized='{normalized}'), purpose='{req.purpose}', num_papers={req.num_papers}")
 
-    # Find relevant papers using ILIKE-style matching on title OR abstract
+    # Fetch ALL papers from DB, rank in Python (broad set, no strict SQL filters)
     all_papers = db.query(PaperModel).all()
-    relevant_papers: List[Any] = []
+    total_in_db = len(all_papers)
+    logger.info(f"  Total papers in DB: {total_in_db}")
 
-    for p in all_papers:
-        title = (p.title or "").lower()
-        abstract = (p.abstract or "").lower()
-        if topic_lower in title or topic_lower in abstract:
-            relevant_papers.append(p)
+    # Rank using soft matching with synonym expansion
+    ranked = rank_papers(normalized, all_papers)
+    local_count = len(ranked)
+    logger.info(f"  Relevant matches after ranking: {local_count}")
 
-    local_count = len(relevant_papers)
-    logger.info(f"  Local matches: {local_count}")
-
-    # Fetch from arXiv if not enough and not fetched recently
-    current_time = datetime.now()
-    last_fetch: Optional[datetime] = fetch_cache.get(topic_lower)
-    should_fetch = local_count < req.num_papers and (
-        last_fetch is None or (current_time - last_fetch).total_seconds() > 3600
-    )
-
-    if should_fetch:
-        logger.info(f"  Fetching from arXiv for '{req.topic}'")
+    # Fetch from arXiv if not enough results and not cached
+    if local_count < req.num_papers and not _is_cache_valid(normalized):
+        logger.info(f"  Fetching from arXiv for '{normalized}'")
         max_res = max(100, req.num_papers * 2)
         try:
-            ingest_papers_from_arxiv(req.topic, max_results=max_res)
-            fetch_cache[topic_lower] = datetime.now()
+            ingest_papers_from_arxiv(normalized, max_results=max_res)
+            fetch_cache[normalized] = datetime.now()
 
-            # Re-query after ingestion
+            # Re-rank after ingestion
             all_papers = db.query(PaperModel).all()
-            relevant_papers = []
-            for p in all_papers:
-                title = (p.title or "").lower()
-                abstract = (p.abstract or "").lower()
-                if topic_lower in title or topic_lower in abstract:
-                    relevant_papers.append(p)
-            logger.info(f"  After fetch, local matches: {len(relevant_papers)}")
+            ranked = rank_papers(normalized, all_papers)
+            logger.info(f"  After fetch, relevant matches: {len(ranked)}")
         except Exception as e:
             logger.error(f"  arXiv fetch failed: {e}")
 
-    # Rank all relevant papers
-    ranked_papers = rank_papers(req.topic, relevant_papers)
+    # --- FALLBACK: if still not enough results, pad with latest papers ---
+    if len(ranked) < req.num_papers:
+        ranked_ids = {id(p) for p in ranked}
+        remaining = sorted(
+            [p for p in all_papers if id(p) not in ranked_ids],
+            key=lambda p: (p.year or 0),
+            reverse=True,
+        )
+        needed = req.num_papers - len(ranked)
+        ranked.extend(remaining[:needed])
+        logger.info(f"  Fallback: padded with {min(needed, len(remaining))} latest papers")
 
     # Apply purpose-aware logic
     purpose_lower = req.purpose.lower()
     response_data: Dict[str, Any] = {"topic": req.topic, "purpose": req.purpose}
 
-    safe_ranked: List[Any] = list(ranked_papers) if ranked_papers else []
+    safe_ranked: List[Any] = list(ranked)
 
     if purpose_lower == "literature review":
         final_papers = diversify_by_year(safe_ranked, req.num_papers)
@@ -178,7 +228,7 @@ def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
     return response_data
 
 # -------------------------------------------------------------------
-# GET /analytics/filter – Filter stored papers
+# GET /analytics/filter
 # -------------------------------------------------------------------
 @app.get("/analytics/filter")
 def filter_papers(
@@ -191,9 +241,11 @@ def filter_papers(
     offset: int = Query(0),
     db: Session = Depends(get_db)
 ):
-    logger.info(f"GET /analytics/filter – q={q}, keyword={keyword}, year_min={year_min}, year_max={year_max}")
-    query = db.query(PaperModel)
+    search_term = q or keyword
+    logger.info(f"GET /analytics/filter – search='{search_term}', year_min={year_min}, year_max={year_max}")
 
+    # Broad fetch, then filter in Python
+    query = db.query(PaperModel)
     if year_min:
         query = query.filter(PaperModel.year >= year_min)
     if year_max:
@@ -201,7 +253,7 @@ def filter_papers(
 
     papers = query.all()
 
-    # Filter by domain
+    # Domain filter
     if domains:
         domain_list = [d.strip().lower() for d in domains.split(",") if d.strip()]
         papers = [
@@ -209,8 +261,7 @@ def filter_papers(
             if any(d in [x.lower() for x in (p.domains or [])] for d in domain_list)
         ]
 
-    # Full-text search: support both 'q' and legacy 'keyword' param
-    search_term = q or keyword
+    # Soft-match ranking
     if search_term:
         papers = rank_papers(search_term, papers)
 
@@ -248,7 +299,8 @@ def get_yearly_count(domain: Optional[str] = None, db: Session = Depends(get_db)
 # -------------------------------------------------------------------
 @app.get("/analytics/keyword-trend")
 def get_keyword_trend(keyword: str = Query(...), db: Session = Depends(get_db)):
-    kw = keyword.lower()
+    # Use query normalization and variants for broader matching
+    variants = get_query_variants(keyword)
     papers = db.query(PaperModel).all()
     yearly_counts: Dict[int, int] = {}
 
@@ -256,7 +308,23 @@ def get_keyword_trend(keyword: str = Query(...), db: Session = Depends(get_db)):
         kw_list = [k.lower() for k in (p.keywords or [])]
         title = (p.title or "").lower()
         abstract = (p.abstract or "").lower()
-        if kw in kw_list or kw in title or kw in abstract:
+        domains = [d.lower() for d in (p.domains or [])]
+
+        matched = False
+        for v in variants:
+            if v in kw_list or v in title or v in abstract or v in domains:
+                matched = True
+                break
+
+        if matched:
+            y = p.year
+            if y is not None:
+                yearly_counts[y] = yearly_counts.get(y, 0) + 1
+
+    # If no trend data found, return overall yearly distribution as fallback
+    if not yearly_counts:
+        logger.info(f"  keyword-trend: no data for '{keyword}', returning overall distribution")
+        for p in papers:
             y = p.year
             if y is not None:
                 yearly_counts[y] = yearly_counts.get(y, 0) + 1
@@ -264,7 +332,7 @@ def get_keyword_trend(keyword: str = Query(...), db: Session = Depends(get_db)):
     return {"keyword": keyword, "yearly_counts": yearly_counts}
 
 # -------------------------------------------------------------------
-# GET /export/tableau-data – CSV streaming export
+# GET /export/tableau-data
 # -------------------------------------------------------------------
 @app.get("/export/tableau-data")
 def export_tableau_data(
@@ -294,7 +362,7 @@ def export_tableau_data(
                 continue
             p_domain = (p.domains or ["Unknown"])[0]
             keywords_str = ",".join(p.keywords or [])
-            writer.writerow([p.title, p.year, p_domain, keywords_str])
+            writer.writerow([p.title or "Untitled", p.year or 0, p_domain, keywords_str])
             yield output.getvalue()
             output.seek(0)
             output.truncate(0)
@@ -306,7 +374,7 @@ def export_tableau_data(
     )
 
 # -------------------------------------------------------------------
-# GET /system/stats – System statistics
+# GET /system/stats
 # -------------------------------------------------------------------
 @app.get("/system/stats")
 def get_system_stats(db: Session = Depends(get_db)):

@@ -17,6 +17,12 @@ export default function StatsPanel({ stats, loading }) {
 
   if (!stats) return null;
 
+  // Derive year range from year_distribution if earliest/latest not provided
+  const yearDist = stats.year_distribution || {};
+  const years = Object.keys(yearDist).map(Number).filter(y => !isNaN(y));
+  const earliestYear = stats.earliest_year || (years.length > 0 ? Math.min(...years) : null);
+  const latestYear = stats.latest_year || (years.length > 0 ? Math.max(...years) : null);
+
   const statItems = [
     {
       title: 'Total Papers',
@@ -26,7 +32,7 @@ export default function StatsPanel({ stats, loading }) {
     },
     {
       title: 'Coverage Range',
-      value: stats.earliest_year && stats.latest_year ? `${stats.earliest_year} - ${stats.latest_year}` : 'N/A',
+      value: earliestYear && latestYear ? `${earliestYear} - ${latestYear}` : 'N/A',
       icon: <CalendarRange size={20} className="text-indigo-600" />,
       bg: 'bg-indigo-50'
     },

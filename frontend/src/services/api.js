@@ -1,18 +1,23 @@
 import axios from 'axios';
 
-const API_BASE_URL = 'http://localhost:8000'; // Make sure the FastAPI runs on 8000
+const API_BASE_URL = 'http://127.0.0.1:8000';
 
 const api = axios.create({
   baseURL: API_BASE_URL,
 });
 
-export const getSystemStats = async () => {
-  const response = await api.get('/system/stats');
+// Context-aware research query (main search endpoint)
+export const researchQuery = async ({ topic, purpose = 'deep dive', num_papers = 20 }) => {
+  const response = await api.post('/research/query', {
+    topic,
+    purpose,
+    num_papers,
+  });
   return response.data;
 };
 
-export const getYearlyCount = async () => {
-  const response = await api.get('/analytics/yearly-count');
+export const getSystemStats = async () => {
+  const response = await api.get('/system/stats');
   return response.data;
 };
 
@@ -23,28 +28,12 @@ export const getKeywordTrend = async (keyword) => {
   return response.data;
 };
 
-export const getRecentPapers = async (limit = 10) => {
-  const response = await api.get('/analytics/recent-papers', {
-    params: { limit }
-  });
+export const getYearlyCount = async () => {
+  const response = await api.get('/analytics/yearly-count');
   return response.data;
 };
 
-export const filterPapers = async ({ year, keyword }) => {
-  const params = {};
-  if (year) params.year = year;
-  if (keyword) params.keyword = keyword;
-  
-  const response = await api.get('/analytics/filter', { params });
-  return response.data;
-};
-
-export const getSummaries = async () => {
-  const response = await api.get('/analytics/summaries');
-  return response.data;
-};
-
-export const searchArxivPapers = async (query, max_results = 5) => {
+export const searchArxivPapers = async (query, max_results = 20) => {
   const response = await api.get('/papers/arxiv', {
     params: { query, max_results }
   });
