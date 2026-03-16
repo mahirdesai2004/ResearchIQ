@@ -40,4 +40,26 @@ export const searchArxivPapers = async (query, max_results = 20) => {
   return response.data;
 };
 
+// Intelligence Endpoints
+export const getLiteratureReview = async (domain) => {
+  const response = await api.get('/analytics/literature-review', {
+    params: { domain }
+  });
+  return response.data;
+};
+
+export const getTrendExplanation = async (keyword) => {
+  const response = await api.get('/analytics/trend-explanation', {
+    params: { keyword }
+  });
+  return response.data;
+};
+
+export const getGapDetection = async (domain) => {
+  const response = await api.get('/analytics/gap-detection', {
+    params: { domain }
+  });
+  return response.data;
+};
+
 export default api;

@@ -3,11 +3,25 @@ import { useSearchParams } from 'react-router-dom';
 import SearchBar from '../components/SearchBar';
 import PaperList from '../components/PaperList';
 import Chart from '../components/Chart';
-import { researchQuery, getKeywordTrend } from '../services/api';
-import { Activity, SlidersHorizontal } from 'lucide-react';
+import { 
+  researchQuery, 
+  getKeywordTrend, 
+  getLiteratureReview, 
+  getTrendExplanation, 
+  getGapDetection 
+} from '../services/api';
+import { 
+  Activity, 
+  SlidersHorizontal, 
+  BookOpen, 
+  Lightbulb, 
+  Target, 
+  Download,
+  AlertCircle
+} from 'lucide-react';
 
 export default function ResultsPage() {
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const query = searchParams.get('q') || '';
   
   const [papers, setPapers] = useState([]);
@@ -16,13 +30,30 @@ export default function ResultsPage() {
   
   const [trendData, setTrendData] = useState([]);
   const [loadingTrend, setLoadingTrend] = useState(true);
+  
+  // Dashboard Intelligence State
+  const [reviewData, setReviewData] = useState(null);
+  const [loadingReview, setLoadingReview] = useState(true);
+  
+  const [gapData, setGapData] = useState(null);
+  const [loadingGaps, setLoadingGaps] = useState(true);
+  
+  const [trendExplanation, setTrendExplanation] = useState(null);
+  const [loadingExplanation, setLoadingExplanation] = useState(false);
 
   // User controls
   const [purpose, setPurpose] = useState('deep dive');
   const [numPapers, setNumPapers] = useState(20);
 
-  // Related keywords from deep dive
-  const [relatedKeywords, setRelatedKeywords] = useState([]);
+  const handleSearchTrigger = () => {
+    // If the query is essentially the same, just re-fetch the data.
+    // We do this by artificially triggering the effect (handled by states changing if any, but since query doesn't change, we just refetch)
+    // Actually, setting searchParams will trigger a re-render and if query is same, nothing happens.
+    // We will just force a fetch by calling the same logic inside useEffect manually, but the cleanest way is a trigger state.
+    setSearchTrigger(prev => prev + 1);
+  };
+
+  const [searchTrigger, setSearchTrigger] = useState(0);
 
   useEffect(() => {
     async function fetchData() {
@@ -30,10 +61,13 @@ export default function ResultsPage() {
       
       setLoadingPapers(true);
       setLoadingTrend(true);
-      setPapers([]);
-      setRelatedKeywords([]);
+      setLoadingReview(true);
+      setLoadingGaps(true);
       
-      // Fetch papers via /research/query
+      setPapers([]);
+      setTrendExplanation(null);
+      
+      // 1. Fetch main papers via /research/query
       try {
         const res = await researchQuery({
           topic: query,
@@ -43,28 +77,20 @@ export default function ResultsPage() {
         
         setPapers(res.papers || []);
         setTotalCount(res.count || 0);
-        
-        if (res.related_keywords) {
-          setRelatedKeywords(res.related_keywords);
-        }
       } catch (err) {
         console.error("Error fetching research query:", err);
-        setPapers([]);
-        setTotalCount(0);
       } finally {
         setLoadingPapers(false);
       }
       
-      // Fetch keyword trend separately
+      // 2. Fetch keyword trend
       try {
         const trendRes = await getKeywordTrend(query);
-        if (trendRes.yearly_counts) {
-          const trendsArray = Object.entries(trendRes.yearly_counts).map(([year, count]) => ({
-            year: String(year),
-            count
-          }));
-          setTrendData(trendsArray);
+        if (Array.isArray(trendRes) && trendRes.length >= 3) {
+          // It's already an array of {year, count} formatted properly
+          setTrendData(trendRes.map(item => ({...item, year: String(item.year)})));
         } else {
+          // Empty or contains {"message": "Not enough data"}
           setTrendData([]);
         }
       } catch (err) {
@@ -73,120 +99,338 @@ export default function ResultsPage() {
       } finally {
         setLoadingTrend(false);
       }
+
+      // 3. Fetch Literature Review
+      try {
+        const reviewRes = await getLiteratureReview(query);
+        setReviewData(reviewRes);
+      } catch (err) {
+        console.error("Error fetching review:", err);
+        setReviewData(null);
+      } finally {
+        setLoadingReview(false);
+      }
+
+      // 4. Fetch Gap Detection
+      try {
+        const gapRes = await getGapDetection(query);
+        setGapData(gapRes);
+      } catch (err) {
+        console.error("Error fetching gaps:", err);
+        setGapData(null);
+      } finally {
+        setLoadingGaps(false);
+      }
     }
     
     fetchData();
-  }, [query, purpose, numPapers]);
+  }, [query, searchTrigger]);
+
+  const handleChartClick = async (event) => {
+    if (event && event.activeLabel) {
+      setLoadingExplanation(true);
+      try {
+        // Find explanation for the specific keyword
+        const expRes = await getTrendExplanation(query);
+        setTrendExplanation(expRes.explanation);
+      } catch (err) {
+        setTrendExplanation("Could not load explanation.");
+      } finally {
+        setLoadingExplanation(false);
+      }
+    }
+  };
+
+  const handleGapClick = (keyword) => {
+    setSearchParams({ q: keyword });
+  };
+
+  const triggerCSVDownload = async (url, filename) => {
+    try {
+      const res = await fetch(url);
+      const data = await res.json();
+      
+      if (!data || data.length === 0) {
+        alert("No data available to export");
+        return;
+      }
+
+      const headers = Object.keys(data[0]);
+      const csvContent = [
+        headers.join(','),
+        ...data.map(row => 
+          headers.map(header => {
+            let val = row[header];
+            if (val === null || val === undefined) val = "";
+            val = String(val).replace(/"/g, '""');
+            if (val.includes(',') || val.includes('"') || val.includes('\n')) {
+              val = `"${val}"`;
+            }
+            return val;
+          }).join(',')
+        )
+      ].join('\n');
+
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement("a");
+      const objUrl = URL.createObjectURL(blob);
+      link.href = objUrl;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (e) {
+      console.error(e);
+      alert("Failed to download CSV");
+    }
+  };
 
   return (
-    <div className="w-full max-w-6xl mx-auto animate-fade-in">
-      {/* Top Search Area */}
-      <div className="mb-6 pb-6 border-b border-gray-200">
-        <SearchBar initialQuery={query} sizes="small" className="!max-w-3xl !mx-0" />
-      </div>
+    <div className="w-full max-w-7xl mx-auto animate-fade-in p-4 xl:p-0 mb-10">
+      
+      {/* Top Search & Controls Area */}
+      <div className="mb-8 pt-6 pb-6 border-b border-gray-200">
+        <h1 className="text-3xl font-bold text-slate-800 mb-6">Research Dashboard</h1>
+        
+        <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center">
+          <div className="flex-1 w-full lg:max-w-xl">
+            <SearchBar initialQuery={query} sizes="medium" className="!m-0" />
+          </div>
+          
+          <div className="flex flex-wrap items-center gap-4 bg-slate-50 p-3 rounded-xl border border-gray-100">
+            <div className="flex items-center gap-2">
+              <SlidersHorizontal size={16} className="text-slate-400" />
+              <span className="text-sm font-medium text-slate-600">Purpose:</span>
+            </div>
+            <select
+              value={purpose}
+              onChange={(e) => setPurpose(e.target.value)}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
+            >
+              <option value="deep dive">Deep Dive</option>
+              <option value="literature review">Literature Review</option>
+              <option value="quick overview">Quick Overview</option>
+            </select>
 
-      {/* Controls Bar */}
-      <div className="mb-8 flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
-          <SlidersHorizontal size={16} className="text-slate-400" />
-          <span className="text-sm font-medium text-slate-500">Purpose:</span>
+            <div className="flex items-center gap-2 ml-2">
+              <span className="text-sm font-medium text-slate-600">Papers:</span>
+            </div>
+            <select
+              value={numPapers}
+              onChange={(e) => setNumPapers(Number(e.target.value))}
+              className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
+            >
+              <option value={10}>10</option>
+              <option value={20}>20</option>
+              <option value={50}>50</option>
+            </select>
+            
+            <button 
+              onClick={handleSearchTrigger}
+              className="ml-auto lg:ml-4 bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition-colors"
+            >
+              Analyze
+            </button>
+          </div>
         </div>
-        <select
-          value={purpose}
-          onChange={(e) => setPurpose(e.target.value)}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
-        >
-          <option value="deep dive">Deep Dive</option>
-          <option value="literature review">Literature Review</option>
-          <option value="quick overview">Quick Overview</option>
-        </select>
-
-        <div className="flex items-center gap-2 ml-2">
-          <span className="text-sm font-medium text-slate-500">Papers:</span>
-        </div>
-        <select
-          value={numPapers}
-          onChange={(e) => setNumPapers(Number(e.target.value))}
-          className="text-sm border border-gray-200 rounded-lg px-3 py-2 bg-white text-slate-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none"
-        >
-          <option value={10}>10</option>
-          <option value={20}>20</option>
-          <option value={50}>50</option>
-        </select>
       </div>
 
       {!query ? (
-        <div className="text-center py-20 text-slate-500 text-lg">
-          Please enter a search term to view results.
+        <div className="text-center py-32 text-slate-500 text-lg flex flex-col items-center">
+          <SearchIcon size={48} className="text-slate-300 mb-4" />
+          <p>Please enter a domain or topic to generate your dashboard.</p>
         </div>
       ) : (
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
           
-          {/* Main Content Area (Papers) */}
-          <div className="lg:col-span-2">
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-2xl font-semibold text-slate-900">
-                Results for "{query}"
-              </h2>
-              {!loadingPapers && (
-                <span className="bg-blue-50 text-blue-700 text-sm font-medium px-3 py-1 rounded-full">
-                  {totalCount} matches
-                </span>
+          {/* Left Column (8 cols): Literature Review & Top Papers */}
+          <div className="lg:col-span-8 space-y-8">
+            
+            {/* SECTION 1: Literature Review */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-6 border-b border-gray-100 pb-4">
+                <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
+                  <BookOpen size={20} />
+                </div>
+                <h2 className="text-xl font-bold text-slate-800">Literature Review</h2>
+              </div>
+              
+              {loadingReview ? (
+                <div className="space-y-4 animate-pulse">
+                  <div className="h-4 bg-slate-200 rounded w-3/4"></div>
+                  <div className="h-4 bg-slate-200 rounded w-full"></div>
+                  <div className="h-4 bg-slate-200 rounded w-5/6"></div>
+                </div>
+              ) : reviewData ? (
+                <div className="space-y-6">
+                  <div>
+                    <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Summary</h3>
+                    <p className="text-slate-700 leading-relaxed">{reviewData.summary}</p>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-50">
+                    <div>
+                       <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Key Themes</h3>
+                       <div className="flex flex-wrap gap-2">
+                         {reviewData.key_themes?.slice(0, 8).map((kw, i) => (
+                           <span key={i} className="bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-md border border-blue-100">
+                             {kw}
+                           </span>
+                         ))}
+                       </div>
+                    </div>
+                    <div>
+                      <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
+                        <AlertCircle size={14} className="text-amber-500" /> Open Questions
+                      </h3>
+                      <ul className="space-y-2">
+                        {reviewData.open_questions?.slice(0, 3).map((q, i) => (
+                          <li key={i} className="text-sm text-slate-600 flex items-start">
+                            <span className="text-amber-500 font-bold mr-2">•</span> 
+                            <span>{q}</span>
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="text-slate-400 text-sm">Review unavailable for this topic.</div>
               )}
             </div>
-            
-            <PaperList 
-              papers={papers} 
-              loading={loadingPapers} 
-              emptyMessage="No results found. Try another query." 
-            />
+
+            {/* SECTION 4: Top Papers */}
+            <div>
+              <div className="flex items-center justify-between mb-4 mt-8">
+                <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
+                  Top Papers <span className="bg-blue-100 text-blue-800 text-xs font-black px-2 py-0.5 rounded-full">{totalCount}</span>
+                </h2>
+              </div>
+              <PaperList 
+                papers={papers} 
+                loading={loadingPapers} 
+                emptyMessage="No relevant papers found for this topic." 
+              />
+            </div>
           </div>
 
-          {/* Sidebar Area */}
-          <div className="lg:col-span-1 space-y-6">
-            {/* Keyword Trend Chart */}
-            <div className="bg-slate-50 border border-gray-200 rounded-xl p-6">
-              <div className="flex items-center gap-2 mb-4">
-                <Activity size={20} className="text-blue-600" />
-                <h3 className="font-semibold text-slate-800">Keyword Trend</h3>
+          {/* Right Column (4 cols): Trends, Gaps, Export */}
+          <div className="lg:col-span-4 space-y-8">
+            
+            {/* SECTION 5: Tableau Export Panel */}
+            <div className="bg-gradient-to-br from-indigo-600 to-blue-700 rounded-2xl p-6 text-white shadow-md">
+              <div className="flex items-center gap-2 mb-2">
+                <Target size={20} className="text-blue-200" />
+                <h2 className="text-xl font-bold">Tableau Export</h2>
               </div>
-              <p className="text-sm text-slate-500 mb-6">
-                Publication frequency over time for this topic.
+              <p className="text-blue-100 text-sm mb-6 leading-relaxed">
+                Download verified data ready for Tableau. Create time-series line charts and keyword distribution bars.
               </p>
               
+              <div className="space-y-3">
+                <button 
+                  onClick={() => triggerCSVDownload(`http://127.0.0.1:8000/export/tableau-data?domain=${encodeURIComponent(query)}`, "researchIQ_papers.csv")}
+                  className="w-full flex items-center justify-center gap-2 bg-white text-indigo-700 hover:bg-slate-50 py-2.5 px-4 rounded-xl font-semibold transition-colors shadow-sm"
+                >
+                  <Download size={18} />
+                  Raw Papers CSV
+                </button>
+                <button
+                  onClick={() => triggerCSVDownload(`http://127.0.0.1:8000/export/tableau-aggregates`, "researchIQ_aggregates.csv")}
+                  className="w-full flex items-center justify-center gap-2 bg-blue-800 hover:bg-blue-900 border border-blue-500 text-white py-2.5 px-4 rounded-xl font-semibold transition-colors"
+                >
+                  <Download size={18} />
+                  Aggregated CSV
+                </button>
+              </div>
+            </div>
+
+            {/* SECTION 2: Trend Visualization */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                <div className="p-2 bg-purple-50 rounded-lg text-purple-600">
+                  <Activity size={20} />
+                </div>
+                <h3 className="font-bold text-slate-800">Trend Visualization</h3>
+              </div>
+              <p className="text-xs text-slate-500 mb-4">Click data points to explain the trend.</p>
+              
               {loadingTrend ? (
-                <div className="h-48 w-full bg-slate-200 animate-pulse rounded-lg"></div>
+                <div className="h-48 w-full bg-slate-100 animate-pulse rounded-xl"></div>
               ) : trendData.length > 0 ? (
-                <Chart 
-                  data={trendData} 
-                  dataKey="count" 
-                  xAxisKey="year" 
-                  color="#3b82f6" 
-                />
+                <div>
+                  <Chart 
+                    data={trendData} 
+                    dataKey="count" 
+                    xAxisKey="year" 
+                    color="#8b5cf6" 
+                    onClick={handleChartClick}
+                  />
+                  {loadingExplanation ? (
+                    <div className="text-sm text-slate-400 mt-4 animate-pulse">Analyzing trend spike...</div>
+                  ) : trendExplanation ? (
+                    <div className="mt-4 p-3 bg-purple-50 border border-purple-100 rounded-lg text-sm text-purple-800">
+                      <strong>Insight:</strong> {trendExplanation}
+                    </div>
+                  ) : null}
+                </div>
               ) : (
-                <div className="h-48 flex items-center justify-center text-sm text-slate-400 bg-white border border-gray-100 rounded-lg">
+                <div className="h-48 flex items-center justify-center text-sm text-slate-400 bg-slate-50 rounded-xl">
                   Not enough data for trend
                 </div>
               )}
             </div>
 
-            {/* Related Keywords (from deep dive) */}
-            {relatedKeywords.length > 0 && (
-              <div className="bg-slate-50 border border-gray-200 rounded-xl p-6">
-                <h3 className="font-semibold text-slate-800 mb-3">Related Keywords</h3>
+            {/* SECTION 3: Research Gaps */}
+            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
+              <div className="flex items-center gap-2 mb-4">
+                 <div className="p-2 bg-emerald-50 rounded-lg text-emerald-600">
+                  <Lightbulb size={20} />
+                </div>
+                <h3 className="font-bold text-slate-800">Research Gaps</h3>
+              </div>
+              <p className="text-xs text-slate-500 mb-5">
+                Low-frequency topics in this domain that may present new opportunities.
+              </p>
+              
+              {loadingGaps ? (
+                <div className="flex flex-wrap gap-2 animate-pulse">
+                  {[1,2,3,4].map(n => <div key={n} className="h-8 w-20 bg-slate-100 rounded-lg mt-1" />)}
+                </div>
+              ) : gapData?.gaps?.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
-                  {relatedKeywords.map((kw, i) => (
-                    <span key={i} className="bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-full">
-                      {kw}
-                    </span>
+                  {gapData.gaps.map((g, i) => (
+                    <button 
+                      key={i} 
+                      onClick={() => handleGapClick(g.keyword)}
+                      className="group flex items-center gap-2 bg-emerald-50 hover:bg-emerald-100 border border-emerald-100 text-emerald-700 text-xs px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      <span className="font-medium">{g.keyword}</span>
+                      <span className="bg-white text-emerald-600 text-[10px] font-bold px-1.5 py-0.5 rounded shadow-sm group-hover:bg-emerald-200">
+                        {g.count}
+                      </span>
+                    </button>
                   ))}
                 </div>
-              </div>
-            )}
+              ) : (
+                <div className="text-slate-400 text-sm">No significant gaps identified.</div>
+              )}
+            </div>
+
           </div>
           
         </div>
       )}
     </div>
+  );
+}
+
+// Just adding a quick fallback icon since imported lucide-react might not have SearchIcon mapped exactly to 'SearchIcon' usually it's `Search`
+function SearchIcon(props) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={props.size||24} height={props.size||24} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={props.className}>
+      <circle cx="11" cy="11" r="8"></circle>
+      <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+    </svg>
   );
 }

@@ -7,64 +7,65 @@ from keyword_extractor import extract_keywords
 
 logger = logging.getLogger(__name__)
 
-def ingest_papers_from_arxiv(topic: str, max_results: int = 50) -> dict:
+def ingest_by_year(topic: str, start_year=2018, end_year=2026):
     """
-    Fetches papers from arXiv, extracts keywords, and stores them in DB.
-    Deduplicates using paper id. Ensures data quality on every paper.
+    Ingest papers for a specific topic across multiple years to ensure true trends.
     """
     client = arxiv.Client()
-    search = arxiv.Search(
-        query=topic,
-        max_results=max_results,
-        sort_by=arxiv.SortCriterion.SubmittedDate
-    )
-
     db = SessionLocal()
-    added_count: int = 0
-    total_fetched: int = 0
+    added_count = 0
 
-    try:
-        results = list(client.results(search))
-        total_fetched = len(results)
+    for year in range(start_year, end_year + 1):
+        query_str = f"{topic} AND submittedDate:[{year}01010000 TO {year}12312359]"
+
+        search = arxiv.Search(
+            query=query_str,
+            max_results=50,
+        )
+
+        try:
+            results = list(client.results(search))
+        except Exception as e:
+            logger.warning(f"arXiv fetch failed for year {year}: {e}")
+            continue
 
         existing_ids = {row[0] for row in db.query(PaperModel.id).all()}
-
         new_papers = []
-        for r in results:
-            entry_id = r.entry_id.split("/")[-1] if r.entry_id else r.get_short_id()
+
+        for result in results:
+            entry_id = result.entry_id.split("/")[-1] if result.entry_id else result.get_short_id()
             if entry_id in existing_ids:
                 continue
 
-            # --- Data quality guards ---
-            raw_title = (r.title or "").replace("\n", " ").strip()
-            title = raw_title if raw_title and raw_title.lower() != "untitled" else "Untitled"
+            title = (result.title or "").replace("\n", " ").strip()
+            if not title or title.lower() == "untitled":
+                title = "No title"
 
-            raw_abstract = (r.summary or "").replace("\n", " ").strip()
-            abstract = raw_abstract if raw_abstract else "No abstract available."
+            abstract = (result.summary or "").replace("\n", " ").strip()
 
-            authors = [a.name for a in r.authors] if r.authors else []
-            year = r.published.year if r.published else datetime.now().year
-            pub_date = r.published.date() if r.published else datetime.now().date()
-
+            authors = [a.name for a in result.authors] if result.authors else []
+            pub_year = result.published.year if result.published else year
+            pub_date = result.published.date() if result.published else datetime.now().date()
             keywords = extract_keywords(title)
-            # Ensure keywords is never empty — use first 3 title words as fallback
+            
+            # Additional fallback to avoid empty keywords
             if not keywords:
-                fallback_words = [w.lower() for w in title.split() if len(w) > 2]
-                keywords = fallback_words[:3] if fallback_words else ["research"]
+                keywords = [w.lower() for w in title.split() if len(w) > 3][:3]
 
-            p = PaperModel(
+            paper = PaperModel(
                 id=entry_id,
                 title=title,
                 abstract=abstract,
                 authors=authors,
+                year=pub_year,
                 published=pub_date,
-                year=year,
                 source="arxiv",
                 domains=[topic],
                 keywords=keywords,
                 summary=None
             )
-            new_papers.append(p)
+
+            new_papers.append(paper)
             existing_ids.add(entry_id)
             added_count += 1
 
@@ -72,20 +73,20 @@ def ingest_papers_from_arxiv(topic: str, max_results: int = 50) -> dict:
             db.bulk_save_objects(new_papers)
             db.commit()
 
-        logger.info(f"Ingested {added_count} new papers for topic '{topic}' (fetched {total_fetched})")
+        logger.info(f"Ingested {len(new_papers)} papers for '{topic}' in year {year}")
 
-    except Exception as e:
-        db.rollback()
-        logger.error(f"Failed arxiv ingestion for {topic}: {e}")
-        raise
-    finally:
-        db.close()
-
+    db.close()
+    
     return {
         "topic": topic,
-        "fetched": total_fetched,
+        "fetched": added_count,  # Total added over all years
         "added": added_count
     }
+
+def ingest_papers_from_arxiv(topic: str, max_results: int = 50) -> dict:
+    # Delegate to ingest_by_year to ensure multi-year representation
+    _ = max_results 
+    return ingest_by_year(topic, start_year=2018, end_year=2026)
 
 async def ingest_papers_from_arxiv_async(topic: str, max_results: int = 50) -> dict:
     loop = asyncio.get_event_loop()
