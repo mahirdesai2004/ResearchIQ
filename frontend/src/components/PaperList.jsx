@@ -1,6 +1,6 @@
-import { FileText, Calendar, ExternalLink, FileDown, Users } from 'lucide-react';
+import { FileText, Calendar, ExternalLink, FileDown, Users, Tag, HelpCircle } from 'lucide-react';
 
-export default function PaperList({ papers, loading, emptyMessage = 'No papers found.' }) {
+export default function PaperList({ papers, loading, mode = 'deep dive', emptyMessage = 'No papers found.' }) {
   if (loading) {
     return (
       <div className="space-y-4">
@@ -27,101 +27,123 @@ export default function PaperList({ papers, loading, emptyMessage = 'No papers f
     );
   }
 
-  return (
-    <div className="space-y-4">
-      {papers.map((paper, idx) => {
-        // Handle both old JSON format and new DB format
-        const paperYear = paper.year || paper.published_year || 'Unknown Year';
-        const paperAbstract = paper.abstract || '';
-        const paperTitle = paper.title || 'Untitled';
-        const paperAuthors = paper.authors || [];
-        const paperSource = paper.source || '';
-        const paperSummary = paper.summary || '';
-        const paperArxivUrl = paper.arxiv_url || (paper.id ? `https://arxiv.org/abs/${paper.id}` : '');
-        const paperPdfUrl = paper.pdf_url || (paper.id ? `https://arxiv.org/pdf/${paper.id}` : '');
-        
-        // Shorten abstract for display
-        const shortAbstract = paperAbstract.length > 300 
-          ? paperAbstract.substring(0, 300) + '...' 
-          : paperAbstract;
+  const renderPaper = (paper, isCard = false) => {
+    const paperYear = paper.year || 'Unknown Year';
+    const paperAbstract = paper.abstract || '';
+    const paperTitle = paper.title || 'Untitled';
+    const paperAuthors = paper.authors || [];
+    const paperScore = paper.score;
+    const matchedKeywords = paper.matched_keywords || [];
+    const paperArxivUrl = paper.id ? `https://arxiv.org/abs/${paper.id}` : '';
+    const paperPdfUrl = paper.id ? `https://arxiv.org/pdf/${paper.id}` : '';
 
-        return (
-          <div key={paper.id || idx} className="glass-card p-6 hover:-translate-y-0.5 transition-transform duration-200">
-            <div className="flex items-start justify-between gap-3">
-              <h3 className="text-lg font-semibold text-slate-900 mb-2 leading-tight flex-1">
-                {paperTitle}
-              </h3>
-              <div className="flex flex-col gap-2 flex-shrink-0">
-                {paperArxivUrl && (
-                  <a
-                    href={paperArxivUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-600 hover:text-blue-800 bg-blue-50 hover:bg-blue-100 px-3 py-1.5 rounded-full transition-colors"
-                    title="View on arXiv"
-                  >
-                    <ExternalLink size={12} />
-                    Abstract
-                  </a>
-                )}
-                {paperPdfUrl && (
-                  <a
-                    href={paperPdfUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1.5 text-xs font-medium text-emerald-600 hover:text-emerald-800 bg-emerald-50 hover:bg-emerald-100 px-3 py-1.5 rounded-full transition-colors"
-                    title="View PDF"
-                  >
-                    <FileDown size={12} />
-                    PDF
-                  </a>
-                )}
-              </div>
+    const shortAbstract = paperAbstract.length > 200 && isCard
+      ? paperAbstract.substring(0, 200) + '...' 
+      : paperAbstract;
+
+    return (
+      <div key={paper.id || paperTitle} className={`bg-white border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ${isCard ? 'flex flex-col h-full' : 'mb-4'}`}>
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <h3 className="text-lg font-semibold text-slate-900 leading-tight">
+            {paperTitle}
+          </h3>
+          {paperScore > 0 && (
+            <div className="flex-shrink-0 bg-indigo-50 text-indigo-700 text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1" title="Relevance Score">
+              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
+              {paperScore}
             </div>
+          )}
+        </div>
 
-            <div className="flex items-center gap-2 text-sm text-slate-400 font-medium mb-3">
-              <Calendar size={14} />
-              <span>{paperYear}</span>
-              {paperSource && (
-                <span className="bg-slate-100 text-slate-500 text-xs px-2 py-0.5 rounded-full ml-2 uppercase tracking-wider">
-                  {paperSource}
+        <div className="flex items-center gap-3 text-sm text-slate-500 font-medium mb-3">
+          <span className="flex items-center gap-1"><Calendar size={14} /> {paperYear}</span>
+          {paperAuthors.length > 0 && (
+            <span className="flex items-center gap-1 text-xs truncate max-w-xs">
+              <Users size={12} /> {paperAuthors.slice(0, 2).join(', ')}{paperAuthors.length > 2 ? ' et al.' : ''}
+            </span>
+          )}
+        </div>
+
+        {matchedKeywords.length > 0 && (
+          <div className="mb-4 bg-emerald-50/50 border border-emerald-100 rounded-lg p-3">
+            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-800 mb-2">
+               <HelpCircle size={14} /> Why this paper?
+            </div>
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              <span className="text-xs text-slate-600 mr-1 flex items-center">Matched:</span>
+              {matchedKeywords.map((kw, i) => (
+                <span key={i} className="inline-flex items-center gap-1 bg-white border border-emerald-200 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
+                  <Tag size={10} /> {kw}
                 </span>
-              )}
-            </div>
-
-            {/* Authors */}
-            {paperAuthors.length > 0 && (
-              <div className="flex items-center gap-1.5 text-xs text-slate-400 mb-3 flex-wrap">
-                <Users size={12} />
-                <span>{paperAuthors.slice(0, 4).join(', ')}{paperAuthors.length > 4 ? ` +${paperAuthors.length - 4} more` : ''}</span>
-              </div>
-            )}
-
-            {/* AI Summary */}
-            {paperSummary && paperSummary !== 'Summary not available.' && (
-              <div className="bg-gradient-to-br from-indigo-50/50 via-blue-50/50 to-slate-50/50 border border-blue-100/50 rounded-xl p-4 mb-4 shadow-sm border-l-4 border-l-blue-500">
-                <div className="flex items-center gap-2 mb-2 text-blue-700">
-                  <div className="bg-blue-500 p-1 rounded-md text-white">
-                    <FileText size={12} />
-                  </div>
-                  <span className="text-xs font-bold uppercase tracking-widest">AI Research Insight</span>
-                </div>
-                <p className="text-sm text-slate-700 leading-relaxed italic">
-                  {paperSummary.startsWith('AI Analysis:') ? paperSummary.replace('AI Analysis:', '').trim() : paperSummary}
-                </p>
-              </div>
-            )}
-
-            {/* Abstract */}
-            <div className="relative">
-               <div className="absolute -left-3 top-0 bottom-0 w-0.5 bg-slate-100"></div>
-               <p className="text-slate-500 leading-relaxed text-sm pl-2">
-                 {shortAbstract || 'No abstract available.'}
-               </p>
+              ))}
             </div>
           </div>
-        );
-      })}
+        )}
+
+        <div className="relative flex-grow">
+           <div className="absolute -left-2 top-0 bottom-0 w-0.5 bg-slate-100"></div>
+           <p className="text-slate-600 leading-relaxed text-sm pl-3">
+             {shortAbstract || 'No abstract available.'}
+           </p>
+        </div>
+
+        <div className="flex gap-2 mt-5 pt-4 border-t border-gray-50">
+          {paperArxivUrl && (
+            <a href={paperArxivUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors">
+              <ExternalLink size={14} /> arXiv
+            </a>
+          )}
+          {paperPdfUrl && (
+            <a href={paperPdfUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors ml-3">
+              <FileDown size={14} /> PDF
+            </a>
+          )}
+        </div>
+      </div>
+    );
+  };
+
+  // --- RENDERING BASED ON PURPOSE ---
+
+  // Quick Overview -> Grid of cards
+  if (mode === 'quick overview') {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4">
+        {papers.map((paper, i) => renderPaper(paper, true))}
+      </div>
+    );
+  }
+
+  // Literature Review -> Grouped by year
+  if (mode === 'literature review') {
+    // Group papers
+    const byYear = {};
+    papers.forEach(p => {
+      const y = p.year || 'Unknown';
+      if (!byYear[y]) byYear[y] = [];
+      byYear[y].append ? byYear[y].push(p) : byYear[y].push(p);
+    });
+    
+    return (
+      <div className="space-y-8">
+        {Object.keys(byYear).sort((a,b) => b - a).map(year => (
+          <div key={year} className="relative">
+            <div className="sticky top-0 bg-slate-50 border-y border-slate-200 py-2 px-4 mb-4 z-10 flex items-center gap-2 text-slate-800 font-bold rounded shadow-sm">
+              <Calendar size={18} className="text-blue-500" /> year {year}
+            </div>
+            <div className="space-y-4 pl-4 border-l-2 border-slate-100 ml-4">
+              {byYear[year].map((p, i) => renderPaper(p, false))}
+            </div>
+          </div>
+        ))}
+      </div>
+    );
+  }
+
+  // Default: Deep Dive -> List
+  return (
+    <div className="space-y-5">
+      {papers.map((paper, i) => renderPaper(paper, false))}
     </div>
   );
 }

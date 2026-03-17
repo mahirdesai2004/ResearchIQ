@@ -309,6 +309,7 @@ export default function ResultsPage() {
               <PaperList 
                 papers={papers} 
                 loading={loadingPapers} 
+                mode={purpose}
                 emptyMessage="No relevant papers found for this topic." 
               />
             </div>

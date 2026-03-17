@@ -16,7 +16,7 @@ def ingest_by_year(topic: str, start_year=2018, end_year=2026):
     added_count = 0
 
     for year in range(start_year, end_year + 1):
-        query_str = f"{topic} AND submittedDate:[{year}01010000 TO {year}12312359]"
+        query_str = f"{topic} AND submittedDate:[{year}-01-01 TO {year}-12-31]"
 
         search = arxiv.Search(
             query=query_str,

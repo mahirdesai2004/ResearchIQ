@@ -7,11 +7,14 @@ from pydantic import BaseModel
 import logging
 import threading
 from datetime import datetime
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
+from collections import defaultdict
 
 from database import engine, SessionLocal, Base, PaperModel, get_db
 from arxiv_ingest import ingest_by_year
-from ranking import rank_papers, normalize_query
+from ranking import filter_and_score
+from query_parser import parse_query
+from analytics import find_gaps
 
 # Initialize DB tables
 Base.metadata.create_all(bind=engine)
@@ -35,7 +38,7 @@ class ResearchQuery(BaseModel):
     num_papers: int = 50
 
 # -------------------------------------------------------------------
-# Core Fixes and Logic Additions
+# Auto-seed
 # -------------------------------------------------------------------
 def reset_database():
     db = SessionLocal()
@@ -43,50 +46,6 @@ def reset_database():
     db.commit()
     db.close()
 
-def search_papers_ranked(db: Session, topic: str, limit: int = 100) -> list:
-    normalized = normalize_query(topic)
-    all_papers = db.query(PaperModel).all()
-    ranked = rank_papers(normalized, all_papers)
-    return list(ranked)[:limit]
-
-def diversify_by_year(papers: list, num: int) -> list:
-    from collections import defaultdict
-    by_year = defaultdict(list)
-    
-    for p in papers:
-        by_year[p.year or 0].append(p)
-
-    years = sorted(by_year.keys(), reverse=True)
-    result = []
-    i = 0
-
-    while len(result) < num and years:
-        year = years[i % len(years)]
-        if by_year[year]:
-            result.append(by_year[year].pop(0))
-        i += 1
-        
-        # Stop if all buckets are empty
-        if all(len(lst) == 0 for lst in by_year.values()):
-            break
-
-    return result
-
-def generate_summary(papers: list) -> str:
-    abstracts = [p.abstract for p in papers if p.abstract][:5]
-    return " ".join(abstracts[:2])[:600]
-
-from collections import Counter
-def extract_top_keywords(papers: list) -> List[str]:
-    keywords = []
-    for p in papers:
-        if p.keywords:
-            keywords.extend(p.keywords)
-    return [k for k, _ in Counter(keywords).most_common(8)]
-
-# -------------------------------------------------------------------
-# Auto-seed
-# -------------------------------------------------------------------
 def _auto_seed():
     try:
         db = SessionLocal()
@@ -115,14 +74,10 @@ threading.Thread(target=_auto_seed, daemon=True).start()
 def health_check():
     return {"status": "ok"}
 
-@app.get("/")
-def read_root():
-    return {"message": "Welcome to ResearchIQ API"}
-
 @app.get("/papers/arxiv")
 def get_arxiv_papers(query: str = Query("ai"), max_results: int = Query(50)):
-    normalized = normalize_query(query)
-    res = ingest_by_year(normalized, start_year=2018, end_year=2026)
+    parsed = parse_query(query)
+    res = ingest_by_year(parsed["normalized"], start_year=2018, end_year=2026)
     return res
 
 @app.post("/papers/arxiv/batch")
@@ -135,57 +90,94 @@ def trigger_batch_ingestion():
         results_list.append(res)
     return {"message": "Batch ingestion completed", "results": results_list}
 
+
+def diversify(papers: list, num: int) -> list:
+    by_year: dict = {}
+    for p in papers:
+        y = p.year or 0
+        by_year.setdefault(y, []).append(p)
+
+    result = []
+    years = sorted(by_year.keys())
+
+    while len(result) < num:
+        for y in years:
+            if by_year[y]:
+                result.append(by_year[y].pop(0))
+                if len(result) >= num:
+                    break
+        # Stop if all buckets are empty
+        if all(len(lst) == 0 for lst in by_year.values()):
+            break
+            
+    return result
+
 @app.post("/research/query")
 def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
-    papers = search_papers_ranked(db, req.topic, limit=100)
+    parsed = parse_query(req.topic)
     
-    if not papers:
-        # Fallback to latest papers broadly
-        papers = sorted(db.query(PaperModel).all(), key=lambda p: (p.year or 0), reverse=True)[:100]
-
-    safe_papers = list(papers)
+    all_papers = db.query(PaperModel).all()
+    scored = filter_and_score(all_papers, parsed)
     
-    if req.purpose == "deep dive":
-        final_papers = safe_papers[:req.num_papers]
-    elif req.purpose == "quick overview":
-        final_papers = safe_papers[:5]
+    # scored is list of tuples: (paper, score, matched)
+    ranked_paper_objects = [x[0] for x in scored]
+    
+    if req.purpose == "quick overview":
+        final = ranked_paper_objects[:5]
+    elif req.purpose == "deep dive":
+        final = ranked_paper_objects[:req.num_papers]
     elif req.purpose == "literature review":
-        final_papers = diversify_by_year(safe_papers, req.num_papers)
+        final = diversify(ranked_paper_objects, req.num_papers)
     else:
-        final_papers = safe_papers[:req.num_papers]
-
+        final = ranked_paper_objects[:req.num_papers]
+        
+    paper_metadata = {id(p): {"score": s, "matched": m} for p, s, m in scored}
+    
+    response_papers = []
+    for p in final:
+        meta = paper_metadata.get(id(p), {"score": 0, "matched": []})
+        response_papers.append({
+            "title": p.title,
+            "year": p.year,
+            "authors": p.authors,
+            "abstract": p.abstract,
+            "matched_keywords": meta["matched"],
+            "score": meta["score"],
+            "id": p.id
+        })
+        
     response_data: dict[str, Any] = {
         "topic": req.topic, 
         "purpose": req.purpose, 
-        "count": len(final_papers), 
-        "papers": final_papers
+        "count": len(response_papers), 
+        "papers": response_papers
     }
     
-    if req.purpose == "deep dive":
-        response_data["related_keywords"] = extract_top_keywords(final_papers)
-        
     return response_data
 
 @app.get("/analytics/keyword-trend")
-def keyword_trend(keyword: str = Query(...)):
-    db = SessionLocal()
-    trend = (
-        db.query(PaperModel.year, func.count(PaperModel.id))
-        .filter(PaperModel.title.ilike(f"%{keyword}%"))
-        .group_by(PaperModel.year)
-        .order_by(PaperModel.year)
-        .all()
-    )
+def keyword_trend(keyword: str):
+    db: Session = SessionLocal()
+    data = defaultdict(int)
+
+    papers = db.query(PaperModel).all()
+
+    for p in papers:
+        if not p.year:
+            continue
+
+        text = f"{p.title or ''} {p.abstract or ''}".lower()
+        if keyword.lower() in text:
+            data[p.year] += 1
+            
     db.close()
 
-    if len(trend) < 3:
+    if len(data) < 3:
         return {"message": "Not enough data"}
 
-    return [{"year": y, "count": c} for y, c in trend]
+    sorted_dict = dict(sorted(data.items()))
+    return [{"year": k, "count": v} for k, v in sorted_dict.items()]
 
-# -------------------------------------------------------------------
-# Tableau Export
-# -------------------------------------------------------------------
 @app.get("/export/tableau-data")
 def export_data():
     db = SessionLocal()
@@ -196,9 +188,10 @@ def export_data():
         {
             "title": p.title,
             "year": p.year,
-            "domain": ",".join(p.domains) if hasattr(p, 'domains') and p.domains else "",
-            "keywords": ",".join(p.keywords) if hasattr(p, 'keywords') and p.keywords else "",
-            "authors": ",".join(p.authors) if hasattr(p, 'authors') and p.authors else ""
+            "authors": ", ".join(p.authors or []),
+            "keywords": ", ".join(p.keywords or []),
+            "domain": ", ".join(p.domains or []),
+            "abstract": p.abstract
         }
         for p in papers
     ]
@@ -214,25 +207,35 @@ def export_aggregates():
     )
     db.close()
 
-    return [{"year": y, "total_papers": c} for y, c in results]
-
+    return [{"year": y, "count": c} for y, c in results]
 
 # -------------------------------------------------------------------
 # Intelligence Features
 # -------------------------------------------------------------------
+def extract_top_keywords(papers: list) -> List[str]:
+    from collections import Counter
+    keywords = []
+    for p in papers:
+        if p.keywords:
+            keywords.extend(p.keywords)
+    return [k for k, _ in Counter(keywords).most_common(8)]
+
 @app.get("/analytics/literature-review")
 def literature_review(domain: str = Query(...), db: Session = Depends(get_db)):
-    papers = search_papers_ranked(db, domain, limit=100)
-    if not papers:
-        papers = list(db.query(PaperModel).all())[:100]
-
-    top_papers = list(papers[:50])
+    parsed = parse_query(domain)
+    all_papers = db.query(PaperModel).all()
+    scored = filter_and_score(all_papers, parsed)
+    
+    top_papers = [x[0] for x in scored[:50]]
+    if not top_papers:
+        top_papers = list(all_papers[:50])
     
     current_year = datetime.now().year
     older_papers = [p for p in top_papers if (p.year or 0) < current_year - 2]
     recent_papers = [p for p in top_papers if (p.year or 0) >= current_year - 2]
     
-    summary = generate_summary(top_papers)
+    abstracts = [p.abstract for p in top_papers if p.abstract][:5]
+    summary = " ".join(abstracts[:2])[:600]
     if not summary:
         summary = "No detailed abstracts available to summarize."
         
@@ -258,23 +261,35 @@ def literature_review(domain: str = Query(...), db: Session = Depends(get_db)):
         "key_themes": extract_top_keywords(top_papers),
         "recent_trends": extract_top_keywords(recent_papers),
         "open_questions": open_questions,
-        "top_papers": top_papers[:10]
+        "top_papers": [{"title": p.title, "year": p.year} for p in top_papers[:10]]
     }
 
 @app.get("/analytics/trend-explanation")
 def trend_explanation(keyword: str = Query(...), db: Session = Depends(get_db)):
-    trend_data = keyword_trend(keyword)
-    if isinstance(trend_data, dict) and "message" in trend_data:
+    db_session: Session = SessionLocal()
+    data = defaultdict(int)
+
+    papers = db_session.query(PaperModel).all()
+    for p in papers:
+        if not p.year:
+            continue
+        text = f"{p.title or ''} {p.abstract or ''}".lower()
+        if keyword.lower() in text:
+            data[p.year] += 1
+    db_session.close()
+
+    if len(data) < 3:
         return {"keyword": keyword, "spike_year": None, "explanation": "Not enough data to explain trend for this topic."}
          
-    # Find spike year
-    spike_year = max(trend_data, key=lambda d: d["count"])["year"]
+    spike_year = max(data.keys(), key=lambda y: data[y])
     
+    parsed = parse_query(keyword)
     all_papers = db.query(PaperModel).filter(PaperModel.year == spike_year).all()
-    ranked = search_papers_ranked(db, keyword, limit=100)
+    scored = filter_and_score(all_papers, parsed)
+    
     explanation = f"In {spike_year}, research interest peaked. "
-    if ranked:
-        top_kws = extract_top_keywords(list(ranked)[:10])
+    if scored:
+        top_kws = extract_top_keywords([x[0] for x in scored[:10]])
         if top_kws:
             explanation += f"Major breakthroughs frequently discussed {', '.join(top_kws[:3])}. "
             
@@ -286,42 +301,21 @@ def trend_explanation(keyword: str = Query(...), db: Session = Depends(get_db)):
 
 @app.get("/analytics/gap-detection")
 def gap_detection(domain: str = Query(...), db: Session = Depends(get_db)):
-    papers = search_papers_ranked(db, domain, limit=100)
-    top_papers = list(papers[:100])
+    parsed = parse_query(domain)
+    all_papers = db.query(PaperModel).all()
+    scored = filter_and_score(all_papers, parsed)
     
+    top_papers = [x[0] for x in scored[:100]]
+    gaps = find_gaps(top_papers)
+    
+    from collections import Counter
     all_kws = []
     for p in top_papers:
         if p.keywords:
             all_kws.extend([k.lower() for k in p.keywords if len(k) > 3])
-            
     counts = Counter(all_kws)
-    sorted_kws = counts.most_common()
-    if len(sorted_kws) > 20:
-        tail = [(kw, count) for kw, count in sorted_kws if count > 1]
-        gaps = tail[-10:] if tail else sorted_kws[-10:]
-    else:
-        gaps = sorted_kws[-5:]
         
     return {
         "domain": domain,
-        "gaps": [{"keyword": kw, "count": dict(counts).get(kw, 1)} for kw, _ in gaps]
-    }
-
-@app.get("/system/stats")
-def get_system_stats(db: Session = Depends(get_db)):
-    papers = db.query(PaperModel).all()
-    total = len(papers)
-    domains_count: Dict[str, int] = {}
-    years_count: Dict[int, int] = {}
-
-    for p in papers:
-        for d in (p.domains or []):
-            domains_count[d] = domains_count.get(d, 0) + 1
-        if p.year is not None:
-            years_count[p.year] = years_count.get(p.year, 0) + 1
-
-    return {
-        "total_papers": total,
-        "papers_per_domain": domains_count,
-        "year_distribution": years_count
+        "gaps": [{"keyword": kw, "count": counts.get(kw, 1)} for kw in gaps]
     }
