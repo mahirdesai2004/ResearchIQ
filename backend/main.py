@@ -12,9 +12,17 @@ from collections import defaultdict
 
 from database import engine, SessionLocal, Base, PaperModel, get_db
 from arxiv_ingest import ingest_by_year
-from ranking import filter_and_score
+from ranking import score_and_filter
 from query_parser import parse_query
 from analytics import find_gaps
+from llm_layer import (
+    llm_filter_irrelevant, 
+    llm_rerank, 
+    quick_summary, 
+    literature_review_llm, 
+    explain_trend_llm, 
+    why_this_paper
+)
 
 # Initialize DB tables
 Base.metadata.create_all(bind=engine)
@@ -76,8 +84,9 @@ def health_check():
 
 @app.get("/papers/arxiv")
 def get_arxiv_papers(query: str = Query("ai"), max_results: int = Query(50)):
+    from query_parser import normalize
     parsed = parse_query(query)
-    res = ingest_by_year(parsed["normalized"], start_year=2018, end_year=2026)
+    res = ingest_by_year(normalize(query), start_year=2018, end_year=2026)
     return res
 
 @app.post("/papers/arxiv/batch")
@@ -117,40 +126,95 @@ def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
     parsed = parse_query(req.topic)
     
     all_papers = db.query(PaperModel).all()
-    scored = filter_and_score(all_papers, parsed)
+    scored = score_and_filter(all_papers, parsed)
     
-    # scored is list of tuples: (paper, score, matched)
-    ranked_paper_objects = [x[0] for x in scored]
-    
-    if req.purpose == "quick overview":
-        final = ranked_paper_objects[:5]
-    elif req.purpose == "deep dive":
-        final = ranked_paper_objects[:req.num_papers]
-    elif req.purpose == "literature review":
-        final = diversify(ranked_paper_objects, req.num_papers)
-    else:
-        final = ranked_paper_objects[:req.num_papers]
-        
+    # Base ranked extraction
+    ranked_paper_objects = [p for p, _, _ in scored]
     paper_metadata = {id(p): {"score": s, "matched": m} for p, s, m in scored}
     
+    print("\n=== QUERY DEBUG ===")
+    print("Query:", req.topic)
+    print("Parsed Terms:", parsed)
+
+    for p, score, matched in scored[:10]:
+        title_str = p.title or ""
+        print("TITLE:", title_str[:80])
+        print("MATCHED:", matched)
+        print("SCORE:", score)
+        print("---")
+        
+    if len(ranked_paper_objects) == 0:
+        return {
+            "topic": req.topic, 
+            "purpose": req.purpose, 
+            "count": 0, 
+            "papers": [],
+            "summary": "No relevant papers found matching your query."
+        }
+    
+    # 🔥 LLM LAYER
+    # Filter only applied to top results (top 20) inside the llm function to avoid massive costs
+    filtered = llm_filter_irrelevant(req.topic, ranked_paper_objects)
+    
+    # Rerank on top of the filtered safe stack
+    candidates = filtered if filtered else ranked_paper_objects
+    reranked = llm_rerank(req.topic, candidates)
+    
+    # Merge carefully to avoid duplicating the reranked objects
+    final_ranked = list(reranked)
+    reranked_ids = {p.id for p in reranked}
+    for p in ranked_paper_objects:
+        if p.id not in reranked_ids:
+            final_ranked.append(p)
+    
+    # Purpose Logic
+    summary_text = None
+    if req.purpose == "quick overview":
+        final = final_ranked[:5]
+        summary_text = quick_summary(req.topic, final)
+    elif req.purpose == "deep dive":
+        final = final_ranked[:req.num_papers]
+    elif req.purpose == "literature review":
+        final = diversify(final_ranked, req.num_papers)
+        # Note: literature_review_llm returns dict. The frontend currently puts 'summary' and 'open_questions' directly from the /analytics/literature-review endpoint
+        # For /research/query, they just ask for 'summary', but we'll return the string version if it asks for string.
+        # Actually, literature_review outputs a structured dict. I will serialize it to text or provide it as a dict. 
+        # I'll let literature_review_llm be formatted nicely in summary field.
+        rev = literature_review_llm(req.topic, final)
+        summary_text = rev.get("summary", "Summary not generated.")
+        # if frontend expects dict on query page, we will just send it in summary string
+        # Actually user prompt: 'summary = literature_review(request.topic, selected)'. so just assign it.
+    else:
+        final = final_ranked[:req.num_papers]
+        
     response_papers = []
     for p in final:
         meta = paper_metadata.get(id(p), {"score": 0, "matched": []})
+        
+        # 🔥 LLM WHY Badge (Optional integration)
+        why = why_this_paper(req.topic, p)
+        
+        kw_list = list(meta.get("matched", []))
+        if why and why != "Relevant based on keywords.":
+            kw_list.append(f"LLM insight: {why}")
+            
         response_papers.append({
             "title": p.title,
             "year": p.year,
             "authors": p.authors,
             "abstract": p.abstract,
-            "matched_keywords": meta["matched"],
-            "score": meta["score"],
-            "id": p.id
+            "matched_keywords": kw_list,
+            "score": meta.get("score", 0),
+            "id": p.id,
+            "llm_reason": why
         })
         
     response_data: dict[str, Any] = {
         "topic": req.topic, 
         "purpose": req.purpose, 
         "count": len(response_papers), 
-        "papers": response_papers
+        "papers": response_papers,
+        "summary": summary_text
     }
     
     return response_data
@@ -224,43 +288,24 @@ def extract_top_keywords(papers: list) -> List[str]:
 def literature_review(domain: str = Query(...), db: Session = Depends(get_db)):
     parsed = parse_query(domain)
     all_papers = db.query(PaperModel).all()
-    scored = filter_and_score(all_papers, parsed)
+    scored = score_and_filter(all_papers, parsed)
     
     top_papers = [x[0] for x in scored[:50]]
     if not top_papers:
         top_papers = list(all_papers[:50])
     
-    current_year = datetime.now().year
-    older_papers = [p for p in top_papers if (p.year or 0) < current_year - 2]
-    recent_papers = [p for p in top_papers if (p.year or 0) >= current_year - 2]
+    # Replace static parsing with LLM structured parsing
+    rev = literature_review_llm(domain, top_papers)
     
-    abstracts = [p.abstract for p in top_papers if p.abstract][:5]
-    summary = " ".join(abstracts[:2])[:600]
-    if not summary:
-        summary = "No detailed abstracts available to summarize."
-        
-    import re
-    open_questions = []
-    question_keywords = ["future", "challenge", "limit", "remain", "open problem"]
-    for p in recent_papers[:10]:
-        if not p.abstract: continue
-        sentences = re.split(r'(?<=[.!?]) +', p.abstract)
-        for s in sentences:
-            if any(qk in s.lower() for qk in question_keywords):
-                open_questions.append(s)
-                if len(open_questions) >= 5:
-                    break
-        if len(open_questions) >= 5:
-            break
-            
-    if not open_questions:
-        open_questions = ["Requires further investigation into real-world scalability.", "Current methods face limitations in diverse environments."]
+    # Fallback missing data if needed
+    if not rev.get("summary"):
+        rev["summary"] = "No detailed abstracts available to summarize."
         
     return {
-        "summary": summary,
-        "key_themes": extract_top_keywords(top_papers),
-        "recent_trends": extract_top_keywords(recent_papers),
-        "open_questions": open_questions,
+        "summary": rev.get("summary"),
+        "key_themes": rev.get("key_themes", extract_top_keywords(top_papers)),
+        "recent_trends": extract_top_keywords(top_papers[:20]),
+        "open_questions": rev.get("open_questions", []),
         "top_papers": [{"title": p.title, "year": p.year} for p in top_papers[:10]]
     }
 
@@ -285,13 +330,12 @@ def trend_explanation(keyword: str = Query(...), db: Session = Depends(get_db)):
     
     parsed = parse_query(keyword)
     all_papers = db.query(PaperModel).filter(PaperModel.year == spike_year).all()
-    scored = filter_and_score(all_papers, parsed)
+    scored = score_and_filter(all_papers, parsed)
     
-    explanation = f"In {spike_year}, research interest peaked. "
-    if scored:
-        top_kws = extract_top_keywords([x[0] for x in scored[:10]])
-        if top_kws:
-            explanation += f"Major breakthroughs frequently discussed {', '.join(top_kws[:3])}. "
+    top_matched = [x[0] for x in scored[:10]]
+    
+    # LLM replacement for static format
+    explanation = explain_trend_llm(keyword, spike_year, top_matched)
             
     return {
         "keyword": keyword,
@@ -303,7 +347,7 @@ def trend_explanation(keyword: str = Query(...), db: Session = Depends(get_db)):
 def gap_detection(domain: str = Query(...), db: Session = Depends(get_db)):
     parsed = parse_query(domain)
     all_papers = db.query(PaperModel).all()
-    scored = filter_and_score(all_papers, parsed)
+    scored = score_and_filter(all_papers, parsed)
     
     top_papers = [x[0] for x in scored[:100]]
     gaps = find_gaps(top_papers)
