@@ -4,34 +4,949 @@
     "title": "RETA-LLM: A Retrieval-Augmented Large Language Model Toolkit",
     "abstract": "Although Large Language Models (LLMs) have demonstrated extraordinary capabilities in many domains, they still have a tendency to hallucinate and generate fictitious responses to user requests. This problem can be alleviated by augmenting LLMs with information retrieval (IR) systems (also known as retrieval-augmented LLMs). Applying this strategy, LLMs can generate more factual texts in response to user input according to the relevant content retrieved by IR systems from external corpora as references. In addition, by incorporating external knowledge, retrieval-augmented LLMs can answer in-domain questions that cannot be answered by solely relying on the world knowledge stored in parameters. To support research in this area and facilitate the development of retrieval-augmented LLM systems, we develop RETA-LLM, a {RET}reival-{A}ugmented LLM toolkit. In RETA-LLM, we create a complete pipeline to help researchers and users build their customized in-domain LLM-based systems. Compared with previous retrieval-augmented LLM systems, RETA-LLM provides more plug-and-play modules to support better interaction between IR systems and LLMs, including {request rewriting, document retrieval, passage extraction, answer generation, and fact checking} modules. Our toolkit is publicly available at https://github.com/RUC-GSAI/YuLan-IR/tree/main/RETA-LLM.",
     "published_year": "2023",
-    "source": "arxiv"
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2306.05212v1",
+    "pdf_url": "https://arxiv.org/pdf/2306.05212v1.pdf",
+    "summary": "Large Language Models (LLMs) are prone to hallucination, a problem mitigated by integrating them with information retrieval (IR) systems to produce more factual and in-domain responses. To advance this field, we developed RETA-LLM, a toolkit offering a complete pipeline with enhanced plug-and-play modules for improved interaction between IR systems and LLMs, encompassing stages like request rewriting, document retrieval, and fact checking."
   },
   {
     "paper_id": "2407.07093v1",
     "title": "FBI-LLM: Scaling Up Fully Binarized LLMs from Scratch via Autoregressive Distillation",
     "abstract": "This work presents a Fully BInarized Large Language Model (FBI-LLM), demonstrating for the first time how to train a large-scale binary language model from scratch (not the partial binary or ternary LLM like BitNet b1.58) to match the performance of its full-precision counterparts (e.g., FP16 or BF16) in transformer-based LLMs. It achieves this by employing an autoregressive distillation (AD) loss with maintaining equivalent model dimensions (130M, 1.3B, 7B) and training data volume as regular LLM pretraining, while delivering competitive results in terms of perplexity and task-specific effectiveness. Intriguingly, by analyzing the training trajectory, we find that the pretrained weight is not necessary for training binarized LLMs from scratch. This research encourages a new computational framework and may facilitate the future design of specialized hardware tailored for fully 1-bit LLMs. We make all models, code, and training dataset fully accessible and transparent to support further research (Code: https://github.com/LiqunMa/FBI-LLM. Model: https://huggingface.co/LiqunMa/).",
     "published_year": "2024",
-    "source": "arxiv"
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2407.07093v1",
+    "pdf_url": "https://arxiv.org/pdf/2407.07093v1.pdf",
+    "summary": "This work introduces FBI-LLM, demonstrating for the first time the successful training of a fully binarized large language model from scratch that matches the performance of its full-precision counterparts. It achieves this using an autoregressive distillation loss and surprisingly finds that pretrained weights are not necessary for training binarized LLMs. This research encourages new computational frameworks and facilitates the design of specialized hardware for fully 1-bit LLMs."
   },
   {
     "paper_id": "2408.13006v2",
     "title": "Systematic Evaluation of LLM-as-a-Judge in LLM Alignment Tasks: Explainable Metrics and Diverse Prompt Templates",
     "abstract": "LLM-as-a-Judge has been widely applied to evaluate and compare different LLM alignmnet approaches (e.g., RLHF and DPO). However, concerns regarding its reliability have emerged, due to LLM judges' biases and inconsistent decision-making. Previous research has developed evaluation frameworks to assess reliability of LLM judges and their alignment with human preferences. However, the employed evaluation metrics often lack adequate explainability and fail to address LLM internal inconsistency. Additionally, existing studies inadequately explore the impact of various prompt templates when applying LLM-as-a-Judge methods, leading to potentially inconsistent comparisons between different alignment algorithms. In this work, we systematically evaluate LLM-as-a-Judge on alignment tasks by defining more theoretically interpretable evaluation metrics and explicitly mitigating LLM internal inconsistency from reliability metrics. We develop an open-source framework to evaluate, compare, and visualize the reliability and alignment of LLM judges, which facilitates practitioners to choose LLM judges for alignment tasks. In the experiments, we examine effects of diverse prompt templates on LLM-judge reliability and also demonstrate our developed framework by comparing various LLM judges on two common alignment datasets (i.e., TL;DR Summarization and HH-RLHF-Helpfulness). Our results indicate a significant impact of prompt templates on LLM judge performance, as well as a mediocre alignment level between the tested LLM judges and human evaluators.",
     "published_year": "2024",
-    "source": "arxiv"
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2408.13006v2",
+    "pdf_url": "https://arxiv.org/pdf/2408.13006v2.pdf",
+    "summary": "This work introduces an open-source framework and more interpretable metrics to systematically evaluate LLM-as-a-Judge reliability on alignment tasks, explicitly mitigating internal inconsistencies. Experiments reveal a significant impact of prompt templates on LLM judge performance and indicate only a mediocre alignment level between LLM judges and human evaluators."
   },
   {
     "paper_id": "2406.01698v3",
     "title": "Demystifying AI Platform Design for Distributed Inference of Next-Generation LLM models",
     "abstract": "Large language models (LLMs) have shown remarkable performance across a wide range of applications, often outperforming human experts. However, deploying these gigantic models efficiently for diverse inference use cases requires carefully designed hardware platforms with ample computing, memory, and network resources. With constant innovation in LLM serving optimizations and model architecture evolving at breakneck speed, the hardware requirements to meet Service Level Objectives (SLOs) remain an open research question.   To answer the question, we present an analytical tool, GenZ, to efficiently navigate the relationship between diverse LLM model architectures(Dense, GQA, MoE, Mamba), LLM serving optimizations(Chunking, Speculative decoding, quanitization), and AI platform design parameters. Our tool estimates LLM inference performance metrics for the given scenario. We have validated against real hardware platforms running various different LLM models, achieving a max geomean error of 5.82.We use GenZ to identify compute, memory capacity, memory bandwidth, network latency, and network bandwidth requirements across diverse LLM inference use cases. We also study diverse architectural choices in use today (inspired by LLM serving platforms from several vendors) to help inform computer architects designing next-generation AI hardware accelerators and platforms. The trends and insights derived from GenZ can guide AI engineers deploying LLMs as well as computer architects designing next-generation hardware accelerators and platforms. Ultimately, this work sheds light on the platform design considerations for unlocking the full potential of large language models across a spectrum of applications. The source code is available at https://github.com/abhibambhaniya/GenZ-LLM-Analyzer . Users can also be tried it on at https://genz-llm-analyzer.streamlit.app/ without any setup on your web browser.",
     "published_year": "2024",
-    "source": "arxiv"
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2406.01698v3",
+    "pdf_url": "https://arxiv.org/pdf/2406.01698v3.pdf",
+    "summary": "This paper presents GenZ, an analytical tool designed to efficiently navigate the complex relationship between diverse LLM model architectures, serving optimizations, and AI platform design parameters. GenZ estimates LLM inference performance metrics and identifies crucial hardware requirements (compute, memory, network) for various use cases, validated with a max geomean error of 5.82 against real hardware. The insights derived from GenZ aim to guide computer architects in designing next-generation AI hardware accelerators and platforms."
   },
   {
     "paper_id": "2601.17768v2",
     "title": "LLM-42: Enabling Determinism in LLM Inference with Verified Speculation",
     "abstract": "In LLM inference, the same prompt may yield different outputs across different runs. At the system level, this non-determinism arises from floating-point non-associativity combined with dynamic batching and GPU kernels whose reduction orders vary with batch size. A straightforward way to eliminate non-determinism is to disable dynamic batching during inference, but doing so severely degrades throughput. Another approach is to make kernels batch-invariant; however, this tightly couples determinism to kernel design, requiring new implementations. This coupling also imposes fixed runtime overheads, regardless of how much of the workload actually requires determinism.   Inspired by ideas from speculative decoding, we present LLM-42, a scheduling-based approach to enable determinism in LLM inference. Our key observation is that if a sequence is in a consistent state, the next emitted token is likely to be consistent even with dynamic batching. Moreover, most GPU kernels use shape-consistent reductions. Leveraging these insights, LLM-42 decodes tokens using a non-deterministic fast path and enforces determinism via a lightweight verify-rollback loop. The verifier replays candidate tokens under a fixed-shape reduction schedule, commits those that are guaranteed to be consistent across runs, and rolls back those violating determinism. LLM-42 mostly re-uses existing kernels unchanged and incurs overhead only in proportion to the traffic that requires determinism.",
     "published_year": "2026",
-    "source": "arxiv"
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2601.17768v2",
+    "pdf_url": "https://arxiv.org/pdf/2601.17768v2.pdf",
+    "summary": "LLM inference can be non-deterministic due to dynamic batching and varying GPU kernel reduction orders. LLM-42 presents a novel scheduling-based approach to achieve determinism without sacrificing throughput or requiring extensive kernel redesign. It works by decoding tokens via a non-deterministic fast path and then enforcing consistency with a verify-rollback loop that replays candidate tokens under a fixed-shape reduction schedule, mostly reusing existing kernels and incurring overhead only for traffic needing determinism."
+  },
+  {
+    "paper_id": "2306.04338v1",
+    "title": "Changing Data Sources in the Age of Machine Learning for Official Statistics",
+    "abstract": "Data science has become increasingly essential for the production of official statistics, as it enables the automated collection, processing, and analysis of large amounts of data. With such data science practices in place, it enables more timely, more insightful and more flexible reporting. However, the quality and integrity of data-science-driven statistics rely on the accuracy and reliability of the data sources and the machine learning techniques that support them. In particular, changes in data sources are inevitable to occur and pose significant risks that are crucial to address in the context of machine learning for official statistics.   This paper gives an overview of the main risks, liabilities, and uncertainties associated with changing data sources in the context of machine learning for official statistics. We provide a checklist of the most prevalent origins and causes of changing data sources; not only on a technical level but also regarding ownership, ethics, regulation, and public perception. Next, we highlight the repercussions of changing data sources on statistical reporting. These include technical effects such as concept drift, bias, availability, validity, accuracy and completeness, but also the neutrality and potential discontinuation of the statistical offering. We offer a few important precautionary measures, such as enhancing robustness in both data sourcing and statistical techniques, and thorough monitoring. In doing so, machine learning-based official statistics can maintain integrity, reliability, consistency, and relevance in policy-making, decision-making, and public discourse.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2306.04338v1",
+    "pdf_url": "https://arxiv.org/pdf/2306.04338v1.pdf",
+    "summary": "This paper examines the significant risks and repercussions of changing data sources in machine learning for official statistics. It details various origins of these changes, from technical to ethical, and their impact on statistical quality, including concept drift, bias, and potential discontinuation. The authors propose enhancing robustness in data sourcing and techniques, alongside thorough monitoring, to maintain statistical integrity and reliability."
+  },
+  {
+    "paper_id": "2006.16189v4",
+    "title": "DOME: Recommendations for supervised machine learning validation in biology",
+    "abstract": "Modern biology frequently relies on machine learning to provide predictions and improve decision processes. There have been recent calls for more scrutiny on machine learning performance and possible limitations. Here we present a set of community-wide recommendations aiming to help establish standards of supervised machine learning validation in biology. Adopting a structured methods description for machine learning based on data, optimization, model, evaluation (DOME) will aim to help both reviewers and readers to better understand and assess the performance and limitations of a method or outcome. The recommendations are formulated as questions to anyone wishing to pursue implementation of a machine learning algorithm. Answers to these questions can be easily included in the supplementary material of published papers.",
+    "published_year": "2020",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2006.16189v4",
+    "pdf_url": "https://arxiv.org/pdf/2006.16189v4.pdf",
+    "summary": "Modern biology frequently relies on machine learning to provide predictions and improve decision processes. There have been recent calls for more scrutiny on machine learning performance and possible limitations."
+  },
+  {
+    "paper_id": "2201.12150v2",
+    "title": "Learning Curves for Decision Making in Supervised Machine Learning: A Survey",
+    "abstract": "Learning curves are a concept from social sciences that has been adopted in the context of machine learning to assess the performance of a learning algorithm with respect to a certain resource, e.g., the number of training examples or the number of training iterations. Learning curves have important applications in several machine learning contexts, most notably in data acquisition, early stopping of model training, and model selection. For instance, learning curves can be used to model the performance of the combination of an algorithm and its hyperparameter configuration, providing insights into their potential suitability at an early stage and often expediting the algorithm selection process. Various learning curve models have been proposed to use learning curves for decision making. Some of these models answer the binary decision question of whether a given algorithm at a certain budget will outperform a certain reference performance, whereas more complex models predict the entire learning curve of an algorithm. We contribute a framework that categorises learning curve approaches using three criteria: the decision-making situation they address, the intrinsic learning curve question they answer and the type of resources they use. We survey papers from the literature and classify them into this framework.",
+    "published_year": "2022",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2201.12150v2",
+    "pdf_url": "https://arxiv.org/pdf/2201.12150v2.pdf",
+    "summary": "Learning curves are a concept from social sciences that has been adopted in the context of machine learning to assess the performance of a learning algorithm with respect to a certain resource, e.g., the number of training examples or the number of training iterations. Learning curves have important applications in several machine learning contexts, most notably in data acquisition, early stopping of model training, and model selection."
+  },
+  {
+    "paper_id": "2302.08893v4",
+    "title": "Active learning for data streams: a survey",
+    "abstract": "Online active learning is a paradigm in machine learning that aims to select the most informative data points to label from a data stream. The problem of minimizing the cost associated with collecting labeled observations has gained a lot of attention in recent years, particularly in real-world applications where data is only available in an unlabeled form. Annotating each observation can be time-consuming and costly, making it difficult to obtain large amounts of labeled data. To overcome this issue, many active learning strategies have been proposed in the last decades, aiming to select the most informative observations for labeling in order to improve the performance of machine learning models. These approaches can be broadly divided into two categories: static pool-based and stream-based active learning. Pool-based active learning involves selecting a subset of observations from a closed pool of unlabeled data, and it has been the focus of many surveys and literature reviews. However, the growing availability of data streams has led to an increase in the number of approaches that focus on online active learning, which involves continuously selecting and labeling observations as they arrive in a stream. This work aims to provide an overview of the most recently proposed approaches for selecting the most informative observations from data streams in real time. We review the various techniques that have been proposed and discuss their strengths and limitations, as well as the challenges and opportunities that exist in this area of research.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2302.08893v4",
+    "pdf_url": "https://arxiv.org/pdf/2302.08893v4.pdf",
+    "summary": "Online active learning is a paradigm in machine learning that aims to select the most informative data points to label from a data stream. The problem of minimizing the cost associated with collecting labeled observations has gained a lot of attention in recent years, particularly in real-world applications where data is only available in an unlabeled form."
+  },
+  {
+    "paper_id": "2304.02381v2",
+    "title": "Physics-Inspired Interpretability Of Machine Learning Models",
+    "abstract": "The ability to explain decisions made by machine learning models remains one of the most significant hurdles towards widespread adoption of AI in highly sensitive areas such as medicine, cybersecurity or autonomous driving. Great interest exists in understanding which features of the input data prompt model decision making. In this contribution, we propose a novel approach to identify relevant features of the input data, inspired by methods from the energy landscapes field, developed in the physical sciences. By identifying conserved weights within groups of minima of the loss landscapes, we can identify the drivers of model decision making. Analogues to this idea exist in the molecular sciences, where coordinate invariants or order parameters are employed to identify critical features of a molecule. However, no such approach exists for machine learning loss landscapes. We will demonstrate the applicability of energy landscape methods to machine learning models and give examples, both synthetic and from the real world, for how these methods can help to make models more interpretable.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2304.02381v2",
+    "pdf_url": "https://arxiv.org/pdf/2304.02381v2.pdf",
+    "summary": "The ability to explain decisions made by machine learning models remains one of the most significant hurdles towards widespread adoption of AI in highly sensitive areas such as medicine, cybersecurity or autonomous driving. Great interest exists in understanding which features of the input data prompt model decision making."
+  },
+  {
+    "paper_id": "2303.15563v1",
+    "title": "Privacy-preserving machine learning for healthcare: open challenges and future perspectives",
+    "abstract": "Machine Learning (ML) has recently shown tremendous success in modeling various healthcare prediction tasks, ranging from disease diagnosis and prognosis to patient treatment. Due to the sensitive nature of medical data, privacy must be considered along the entire ML pipeline, from model training to inference. In this paper, we conduct a review of recent literature concerning Privacy-Preserving Machine Learning (PPML) for healthcare. We primarily focus on privacy-preserving training and inference-as-a-service, and perform a comprehensive review of existing trends, identify challenges, and discuss opportunities for future research directions. The aim of this review is to guide the development of private and efficient ML models in healthcare, with the prospects of translating research efforts into real-world settings.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2303.15563v1",
+    "pdf_url": "https://arxiv.org/pdf/2303.15563v1.pdf",
+    "summary": "Machine Learning (ML) has recently shown tremendous success in modeling various healthcare prediction tasks, ranging from disease diagnosis and prognosis to patient treatment. Due to the sensitive nature of medical data, privacy must be considered along the entire ML pipeline, from model training to inference."
+  },
+  {
+    "paper_id": "1905.04749v2",
+    "title": "A Benchmark Study of Machine Learning Models for Online Fake News Detection",
+    "abstract": "The proliferation of fake news and its propagation on social media has become a major concern due to its ability to create devastating impacts. Different machine learning approaches have been suggested to detect fake news. However, most of those focused on a specific type of news (such as political) which leads us to the question of dataset-bias of the models used. In this research, we conducted a benchmark study to assess the performance of different applicable machine learning approaches on three different datasets where we accumulated the largest and most diversified one. We explored a number of advanced pre-trained language models for fake news detection along with the traditional and deep learning ones and compared their performances from different aspects for the first time to the best of our knowledge. We find that BERT and similar pre-trained models perform the best for fake news detection, especially with very small dataset. Hence, these models are significantly better option for languages with limited electronic contents, i.e., training data. We also carried out several analysis based on the models' performance, article's topic, article's length, and discussed different lessons learned from them. We believe that this benchmark study will help the research community to explore further and news sites/blogs to select the most appropriate fake news detection method.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1905.04749v2",
+    "pdf_url": "https://arxiv.org/pdf/1905.04749v2.pdf",
+    "summary": "The proliferation of fake news and its propagation on social media has become a major concern due to its ability to create devastating impacts. Different machine learning approaches have been suggested to detect fake news."
+  },
+  {
+    "paper_id": "1705.05172v1",
+    "title": "Emotion in Reinforcement Learning Agents and Robots: A Survey",
+    "abstract": "This article provides the first survey of computational models of emotion in reinforcement learning (RL) agents. The survey focuses on agent/robot emotions, and mostly ignores human user emotions. Emotions are recognized as functional in decision-making by influencing motivation and action selection. Therefore, computational emotion models are usually grounded in the agent's decision making architecture, of which RL is an important subclass. Studying emotions in RL-based agents is useful for three research fields. For machine learning (ML) researchers, emotion models may improve learning efficiency. For the interactive ML and human-robot interaction (HRI) community, emotions can communicate state and enhance user investment. Lastly, it allows affective modelling (AM) researchers to investigate their emotion theories in a successful AI agent class. This survey provides background on emotion theory and RL. It systematically addresses 1) from what underlying dimensions (e.g., homeostasis, appraisal) emotions can be derived and how these can be modelled in RL-agents, 2) what types of emotions have been derived from these dimensions, and 3) how these emotions may either influence the learning efficiency of the agent or be useful as social signals. We also systematically compare evaluation criteria, and draw connections to important RL sub-domains like (intrinsic) motivation and model-based RL. In short, this survey provides both a practical overview for engineers wanting to implement emotions in their RL agents, and identifies challenges and directions for future emotion-RL research.",
+    "published_year": "2017",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1705.05172v1",
+    "pdf_url": "https://arxiv.org/pdf/1705.05172v1.pdf",
+    "summary": "This article provides the first survey of computational models of emotion in reinforcement learning (RL) agents. The survey focuses on agent/robot emotions, and mostly ignores human user emotions."
+  },
+  {
+    "paper_id": "2509.08759v3",
+    "title": "Fourier Learning Machines: Nonharmonic Fourier-Based Neural Networks for Scientific Machine Learning",
+    "abstract": "We introduce the Fourier Learning Machine (FLM), a neural network (NN) architecture designed to represent a multidimensional nonharmonic Fourier series. The FLM uses a simple feedforward structure with cosine activation functions to learn the frequencies, amplitudes, and phase shifts of the series as trainable parameters. This design allows the model to create a problem-specific spectral basis adaptable to both periodic and nonperiodic functions. Unlike previous Fourier-inspired NN models, the FLM is the first architecture able to represent a multidimensional Fourier series with a complete set of basis functions in separable form, doing so by using a standard Multilayer Perceptron-like architecture. A one-to-one correspondence between the Fourier coefficients and amplitudes and phase-shifts is demonstrated, allowing for the translation between a full, separable basis form and the cosine phase-shifted one. Additionally, we evaluate the performance of FLMs on several scientific computing problems, including benchmark Partial Differential Equations (PDEs) and a family of Optimal Control Problems (OCPs). Computational experiments show that the performance of FLMs is comparable, and often superior, to that of established architectures like SIREN and vanilla feedforward NNs.",
+    "published_year": "2025",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2509.08759v3",
+    "pdf_url": "https://arxiv.org/pdf/2509.08759v3.pdf",
+    "summary": "We introduce the Fourier Learning Machine (FLM), a neural network (NN) architecture designed to represent a multidimensional nonharmonic Fourier series. The FLM uses a simple feedforward structure with cosine activation functions to learn the frequencies, amplitudes, and phase shifts of the series as trainable parameters."
+  },
+  {
+    "paper_id": "1906.01101v1",
+    "title": "MEMe: An Accurate Maximum Entropy Method for Efficient Approximations in Large-Scale Machine Learning",
+    "abstract": "Efficient approximation lies at the heart of large-scale machine learning problems. In this paper, we propose a novel, robust maximum entropy algorithm, which is capable of dealing with hundreds of moments and allows for computationally efficient approximations. We showcase the usefulness of the proposed method, its equivalence to constrained Bayesian variational inference and demonstrate its superiority over existing approaches in two applications, namely, fast log determinant estimation and information-theoretic Bayesian optimisation.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1906.01101v1",
+    "pdf_url": "https://arxiv.org/pdf/1906.01101v1.pdf",
+    "summary": "Efficient approximation lies at the heart of large-scale machine learning problems. In this paper, we propose a novel, robust maximum entropy algorithm, which is capable of dealing with hundreds of moments and allows for computationally efficient approximations."
+  },
+  {
+    "paper_id": "2404.12511v1",
+    "title": "Generalizing Machine Learning Evaluation through the Integration of Shannon Entropy and Rough Set Theory",
+    "abstract": "This research paper delves into the innovative integration of Shannon entropy and rough set theory, presenting a novel approach to generalize the evaluation approach in machine learning. The conventional application of entropy, primarily focused on information uncertainty, is extended through its combination with rough set theory to offer a deeper insight into data's intrinsic structure and the interpretability of machine learning models. We introduce a comprehensive framework that synergizes the granularity of rough set theory with the uncertainty quantification of Shannon entropy, applied across a spectrum of machine learning algorithms. Our methodology is rigorously tested on various datasets, showcasing its capability to not only assess predictive performance but also to illuminate the underlying data complexity and model robustness. The results underscore the utility of this integrated approach in enhancing the evaluation landscape of machine learning, offering a multi-faceted perspective that balances accuracy with a profound understanding of data attributes and model dynamics. This paper contributes a groundbreaking perspective to machine learning evaluation, proposing a method that encapsulates a holistic view of model performance, thereby facilitating more informed decision-making in model selection and application.",
+    "published_year": "2024",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2404.12511v1",
+    "pdf_url": "https://arxiv.org/pdf/2404.12511v1.pdf",
+    "summary": "This research paper delves into the innovative integration of Shannon entropy and rough set theory, presenting a novel approach to generalize the evaluation approach in machine learning. The conventional application of entropy, primarily focused on information uncertainty, is extended through its combination with rough set theory to offer a deeper insight into data's intrinsic structure and the interpretability of machine learning models."
+  },
+  {
+    "paper_id": "2402.01393v3",
+    "title": "ALERT-Transformer: Bridging Asynchronous and Synchronous Machine Learning for Real-Time Event-based Spatio-Temporal Data",
+    "abstract": "We seek to enable classic processing of continuous ultra-sparse spatiotemporal data generated by event-based sensors with dense machine learning models. We propose a novel hybrid pipeline composed of asynchronous sensing and synchronous processing that combines several ideas: (1) an embedding based on PointNet models -- the ALERT module -- that can continuously integrate new and dismiss old events thanks to a leakage mechanism, (2) a flexible readout of the embedded data that allows to feed any downstream model with always up-to-date features at any sampling rate, (3) exploiting the input sparsity in a patch-based approach inspired by Vision Transformer to optimize the efficiency of the method. These embeddings are then processed by a transformer model trained for object and gesture recognition. Using this approach, we achieve performances at the state-of-the-art with a lower latency than competitors. We also demonstrate that our asynchronous model can operate at any desired sampling rate.",
+    "published_year": "2024",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2402.01393v3",
+    "pdf_url": "https://arxiv.org/pdf/2402.01393v3.pdf",
+    "summary": "We seek to enable classic processing of continuous ultra-sparse spatiotemporal data generated by event-based sensors with dense machine learning models. We propose a novel hybrid pipeline composed of asynchronous sensing and synchronous processing that combines several ideas: (1) an embedding based on PointNet models -- the ALERT module -- that can continuously integrate new and dismiss old events thanks to a leakage mechanism, (2) a flexible readout of the embedded data that allows to feed any downstream model with always up-to-date features at any sampling rate, (3) exploiting the input sparsity in a patch-based approach inspired by Vision Transformer to optimize the efficiency of the method."
+  },
+  {
+    "paper_id": "1812.09225v4",
+    "title": "Learning Representations from Dendrograms",
+    "abstract": "We propose unsupervised representation learning and feature extraction from dendrograms. The commonly used Minimax distance measures correspond to building a dendrogram with single linkage criterion, with defining specific forms of a level function and a distance function over that. Therefore, we extend this method to arbitrary dendrograms. We develop a generalized framework wherein different distance measures and representations can be inferred from different types of dendrograms, level functions and distance functions. Via an appropriate embedding, we compute a vector-based representation of the inferred distances, in order to enable many numerical machine learning algorithms to employ such distances. Then, to address the model selection problem, we study the aggregation of different dendrogram-based distances respectively in solution space and in representation space in the spirit of deep representations. In the first approach, for example for the clustering problem, we build a graph with positive and negative edge weights according to the consistency of the clustering labels of different objects among different solutions, in the context of ensemble methods. Then, we use an efficient variant of correlation clustering to produce the final clusters. In the second approach, we investigate the combination of different distances and features sequentially in the spirit of multi-layered architectures to obtain the final features. Finally, we demonstrate the effectiveness of our approach via several numerical studies.",
+    "published_year": "2018",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1812.09225v4",
+    "pdf_url": "https://arxiv.org/pdf/1812.09225v4.pdf",
+    "summary": "We propose unsupervised representation learning and feature extraction from dendrograms. The commonly used Minimax distance measures correspond to building a dendrogram with single linkage criterion, with defining specific forms of a level function and a distance function over that."
+  },
+  {
+    "paper_id": "1904.13223v3",
+    "title": "Unsupervised Representation Learning with Minimax Distance Measures",
+    "abstract": "We investigate the use of Minimax distances to extract in a nonparametric way the features that capture the unknown underlying patterns and structures in the data. We develop a general-purpose and computationally efficient framework to employ Minimax distances with many machine learning methods that perform on numerical data. We study both computing the pairwise Minimax distances for all pairs of objects and as well as computing the Minimax distances of all the objects to/from a fixed (test) object. We first efficiently compute the pairwise Minimax distances between the objects, using the equivalence of Minimax distances over a graph and over a minimum spanning tree constructed on that. Then, we perform an embedding of the pairwise Minimax distances into a new vector space, such that their squared Euclidean distances in the new space equal to the pairwise Minimax distances in the original space. We also study the case of having multiple pairwise Minimax matrices, instead of a single one. Thereby, we propose an embedding via first summing up the centered matrices and then performing an eigenvalue decomposition to obtain the relevant features. In the following, we study computing Minimax distances from a fixed (test) object which can be used for instance in K-nearest neighbor search. Similar to the case of all-pair pairwise Minimax distances, we develop an efficient and general-purpose algorithm that is applicable with any arbitrary base distance measure. Moreover, we investigate in detail the edges selected by the Minimax distances and thereby explore the ability of Minimax distances in detecting outlier objects. Finally, for each setting, we perform several experiments to demonstrate the effectiveness of our framework.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1904.13223v3",
+    "pdf_url": "https://arxiv.org/pdf/1904.13223v3.pdf",
+    "summary": "We investigate the use of Minimax distances to extract in a nonparametric way the features that capture the unknown underlying patterns and structures in the data. We develop a general-purpose and computationally efficient framework to employ Minimax distances with many machine learning methods that perform on numerical data."
+  },
+  {
+    "paper_id": "2111.07508v1",
+    "title": "Public Policymaking for International Agricultural Trade using Association Rules and Ensemble Machine Learning",
+    "abstract": "International economics has a long history of improving our understanding of factors causing trade, and the consequences of free flow of goods and services across countries. The recent shocks to the free trade regime, especially trade disputes among major economies, as well as black swan events, such as trade wars and pandemics, raise the need for improved predictions to inform policy decisions. AI methods are allowing economists to solve such prediction problems in new ways. In this manuscript, we present novel methods that predict and associate food and agricultural commodities traded internationally. Association Rules (AR) analysis has been deployed successfully for economic scenarios at the consumer or store level, such as for market basket analysis. In our work however, we present analysis of imports and exports associations and their effects on commodity trade flows. Moreover, Ensemble Machine Learning methods are developed to provide improved agricultural trade predictions, outlier events' implications, and quantitative pointers to policy makers.",
+    "published_year": "2021",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2111.07508v1",
+    "pdf_url": "https://arxiv.org/pdf/2111.07508v1.pdf",
+    "summary": "International economics has a long history of improving our understanding of factors causing trade, and the consequences of free flow of goods and services across countries. The recent shocks to the free trade regime, especially trade disputes among major economies, as well as black swan events, such as trade wars and pandemics, raise the need for improved predictions to inform policy decisions."
+  },
+  {
+    "paper_id": "1905.10345v1",
+    "title": "Automatic Machine Learning by Pipeline Synthesis using Model-Based Reinforcement Learning and a Grammar",
+    "abstract": "Automatic machine learning is an important problem in the forefront of machine learning. The strongest AutoML systems are based on neural networks, evolutionary algorithms, and Bayesian optimization. Recently AlphaD3M reached state-of-the-art results with an order of magnitude speedup using reinforcement learning with self-play. In this work we extend AlphaD3M by using a pipeline grammar and a pre-trained model which generalizes from many different datasets and similar tasks. Our results demonstrate improved performance compared with our earlier work and existing methods on AutoML benchmark datasets for classification and regression tasks. In the spirit of reproducible research we make our data, models, and code publicly available.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1905.10345v1",
+    "pdf_url": "https://arxiv.org/pdf/1905.10345v1.pdf",
+    "summary": "Automatic machine learning is an important problem in the forefront of machine learning. The strongest AutoML systems are based on neural networks, evolutionary algorithms, and Bayesian optimization."
+  },
+  {
+    "paper_id": "1706.01513v2",
+    "title": "Beyond Volume: The Impact of Complex Healthcare Data on the Machine Learning Pipeline",
+    "abstract": "From medical charts to national census, healthcare has traditionally operated under a paper-based paradigm. However, the past decade has marked a long and arduous transformation bringing healthcare into the digital age. Ranging from electronic health records, to digitized imaging and laboratory reports, to public health datasets, today, healthcare now generates an incredible amount of digital information. Such a wealth of data presents an exciting opportunity for integrated machine learning solutions to address problems across multiple facets of healthcare practice and administration. Unfortunately, the ability to derive accurate and informative insights requires more than the ability to execute machine learning models. Rather, a deeper understanding of the data on which the models are run is imperative for their success. While a significant effort has been undertaken to develop models able to process the volume of data obtained during the analysis of millions of digitalized patient records, it is important to remember that volume represents only one aspect of the data. In fact, drawing on data from an increasingly diverse set of sources, healthcare data presents an incredibly complex set of attributes that must be accounted for throughout the machine learning pipeline. This chapter focuses on highlighting such challenges, and is broken down into three distinct components, each representing a phase of the pipeline. We begin with attributes of the data accounted for during preprocessing, then move to considerations during model building, and end with challenges to the interpretation of model output. For each component, we present a discussion around data as it relates to the healthcare domain and offer insight into the challenges each may impose on the efficiency of machine learning techniques.",
+    "published_year": "2017",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1706.01513v2",
+    "pdf_url": "https://arxiv.org/pdf/1706.01513v2.pdf",
+    "summary": "From medical charts to national census, healthcare has traditionally operated under a paper-based paradigm. However, the past decade has marked a long and arduous transformation bringing healthcare into the digital age."
+  },
+  {
+    "paper_id": "2205.10250v2",
+    "title": "Explanatory machine learning for sequential human teaching",
+    "abstract": "The topic of comprehensibility of machine-learned theories has recently drawn increasing attention. Inductive Logic Programming (ILP) uses logic programming to derive logic theories from small data based on abduction and induction techniques. Learned theories are represented in the form of rules as declarative descriptions of obtained knowledge. In earlier work, the authors provided the first evidence of a measurable increase in human comprehension based on machine-learned logic rules for simple classification tasks. In a later study, it was found that the presentation of machine-learned explanations to humans can produce both beneficial and harmful effects in the context of game learning. We continue our investigation of comprehensibility by examining the effects of the ordering of concept presentations on human comprehension. In this work, we examine the explanatory effects of curriculum order and the presence of machine-learned explanations for sequential problem-solving. We show that 1) there exist tasks A and B such that learning A before B has a better human comprehension with respect to learning B before A and 2) there exist tasks A and B such that the presence of explanations when learning A contributes to improved human comprehension when subsequently learning B. We propose a framework for the effects of sequential teaching on comprehension based on an existing definition of comprehensibility and provide evidence for support from data collected in human trials. Empirical results show that sequential teaching of concepts with increasing complexity a) has a beneficial effect on human comprehension and b) leads to human re-discovery of divide-and-conquer problem-solving strategies, and c) studying machine-learned explanations allows adaptations of human problem-solving strategy with better performance.",
+    "published_year": "2022",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2205.10250v2",
+    "pdf_url": "https://arxiv.org/pdf/2205.10250v2.pdf",
+    "summary": "The topic of comprehensibility of machine-learned theories has recently drawn increasing attention. Inductive Logic Programming (ILP) uses logic programming to derive logic theories from small data based on abduction and induction techniques."
+  },
+  {
+    "paper_id": "1907.01463v1",
+    "title": "Reproducibility in Machine Learning for Health",
+    "abstract": "Machine learning algorithms designed to characterize, monitor, and intervene on human health (ML4H) are expected to perform safely and reliably when operating at scale, potentially outside strict human supervision. This requirement warrants a stricter attention to issues of reproducibility than other fields of machine learning.   In this work, we conduct a systematic evaluation of over 100 recently published ML4H research papers along several dimensions related to reproducibility. We find that the field of ML4H compares poorly to more established machine learning fields, particularly concerning data and code accessibility. Finally, drawing from success in other fields of science, we propose recommendations to data providers, academic publishers, and the ML4H research community in order to promote reproducible research moving forward.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1907.01463v1",
+    "pdf_url": "https://arxiv.org/pdf/1907.01463v1.pdf",
+    "summary": "Machine learning algorithms designed to characterize, monitor, and intervene on human health (ML4H) are expected to perform safely and reliably when operating at scale, potentially outside strict human supervision. This requirement warrants a stricter attention to issues of reproducibility than other fields of machine learning."
+  },
+  {
+    "paper_id": "1807.05351v1",
+    "title": "ML-Schema: Exposing the Semantics of Machine Learning with Schemas and Ontologies",
+    "abstract": "The ML-Schema, proposed by the W3C Machine Learning Schema Community Group, is a top-level ontology that provides a set of classes, properties, and restrictions for representing and interchanging information on machine learning algorithms, datasets, and experiments. It can be easily extended and specialized and it is also mapped to other more domain-specific ontologies developed in the area of machine learning and data mining. In this paper we overview existing state-of-the-art machine learning interchange formats and present the first release of ML-Schema, a canonical format resulted of more than seven years of experience among different research institutions. We argue that exposing semantics of machine learning algorithms, models, and experiments through a canonical format may pave the way to better interpretability and to realistically achieve the full interoperability of experiments regardless of platform or adopted workflow solution.",
+    "published_year": "2018",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1807.05351v1",
+    "pdf_url": "https://arxiv.org/pdf/1807.05351v1.pdf",
+    "summary": "The ML-Schema, proposed by the W3C Machine Learning Schema Community Group, is a top-level ontology that provides a set of classes, properties, and restrictions for representing and interchanging information on machine learning algorithms, datasets, and experiments. It can be easily extended and specialized and it is also mapped to other more domain-specific ontologies developed in the area of machine learning and data mining."
+  },
+  {
+    "paper_id": "1811.10455v1",
+    "title": "A Framework for Implementing Machine Learning on Omics Data",
+    "abstract": "The potential benefits of applying machine learning methods to -omics data are becoming increasingly apparent, especially in clinical settings. However, the unique characteristics of these data are not always well suited to machine learning techniques. These data are often generated across different technologies in different labs, and frequently with high dimensionality. In this paper we present a framework for combining -omics data sets, and for handling high dimensional data, making -omics research more accessible to machine learning applications. We demonstrate the success of this framework through integration and analysis of multi-analyte data for a set of 3,533 breast cancers. We then use this data-set to predict breast cancer patient survival for individuals at risk of an impending event, with higher accuracy and lower variance than methods trained on individual data-sets. We hope that our pipelines for data-set generation and transformation will open up -omics data to machine learning researchers. We have made these freely available for noncommercial use at www.ccg.ai.",
+    "published_year": "2018",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1811.10455v1",
+    "pdf_url": "https://arxiv.org/pdf/1811.10455v1.pdf",
+    "summary": "The potential benefits of applying machine learning methods to -omics data are becoming increasingly apparent, especially in clinical settings. However, the unique characteristics of these data are not always well suited to machine learning techniques."
+  },
+  {
+    "paper_id": "1811.10154v3",
+    "title": "Stop Explaining Black Box Machine Learning Models for High Stakes Decisions and Use Interpretable Models Instead",
+    "abstract": "Black box machine learning models are currently being used for high stakes decision-making throughout society, causing problems throughout healthcare, criminal justice, and in other domains. People have hoped that creating methods for explaining these black box models will alleviate some of these problems, but trying to \\textit{explain} black box models, rather than creating models that are \\textit{interpretable} in the first place, is likely to perpetuate bad practices and can potentially cause catastrophic harm to society. There is a way forward -- it is to design models that are inherently interpretable. This manuscript clarifies the chasm between explaining black boxes and using inherently interpretable models, outlines several key reasons why explainable black boxes should be avoided in high-stakes decisions, identifies challenges to interpretable machine learning, and provides several example applications where interpretable models could potentially replace black box models in criminal justice, healthcare, and computer vision.",
+    "published_year": "2018",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1811.10154v3",
+    "pdf_url": "https://arxiv.org/pdf/1811.10154v3.pdf",
+    "summary": "This manuscript argues that relying on black box machine learning models for high-stakes decisions, even when accompanied by explanations, is insufficient and potentially harmful. The core contribution is the finding that inherently interpretable models must be designed from the outset to avoid perpetuating bad practices, outlining the critical distinction and why explainable black boxes should be avoided."
+  },
+  {
+    "paper_id": "2108.08712v1",
+    "title": "Teaching Uncertainty Quantification in Machine Learning through Use Cases",
+    "abstract": "Uncertainty in machine learning is not generally taught as general knowledge in Machine Learning course curricula. In this paper we propose a short curriculum for a course about uncertainty in machine learning, and complement the course with a selection of use cases, aimed to trigger discussion and let students play with the concepts of uncertainty in a programming setting. Our use cases cover the concept of output uncertainty, Bayesian neural networks and weight distributions, sources of uncertainty, and out of distribution detection. We expect that this curriculum and set of use cases motivates the community to adopt these important concepts into courses for safety in AI.",
+    "published_year": "2021",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2108.08712v1",
+    "pdf_url": "https://arxiv.org/pdf/2108.08712v1.pdf",
+    "summary": "Uncertainty in machine learning is not generally taught as general knowledge in Machine Learning course curricula. In this paper we propose a short curriculum for a course about uncertainty in machine learning, and complement the course with a selection of use cases, aimed to trigger discussion and let students play with the concepts of uncertainty in a programming setting."
+  },
+  {
+    "paper_id": "1904.10922v1",
+    "title": "The Scientific Method in the Science of Machine Learning",
+    "abstract": "In the quest to align deep learning with the sciences to address calls for rigor, safety, and interpretability in machine learning systems, this contribution identifies key missing pieces: the stages of hypothesis formulation and testing, as well as statistical and systematic uncertainty estimation -- core tenets of the scientific method. This position paper discusses the ways in which contemporary science is conducted in other domains and identifies potentially useful practices. We present a case study from physics and describe how this field has promoted rigor through specific methodological practices, and provide recommendations on how machine learning researchers can adopt these practices into the research ecosystem. We argue that both domain-driven experiments and application-agnostic questions of the inner workings of fundamental building blocks of machine learning models ought to be examined with the tools of the scientific method, to ensure we not only understand effect, but also begin to understand cause, which is the raison d'\u00eatre of science.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1904.10922v1",
+    "pdf_url": "https://arxiv.org/pdf/1904.10922v1.pdf",
+    "summary": "In the quest to align deep learning with the sciences to address calls for rigor, safety, and interpretability in machine learning systems, this contribution identifies key missing pieces: the stages of hypothesis formulation and testing, as well as statistical and systematic uncertainty estimation -- core tenets of the scientific method. This position paper discusses the ways in which contemporary science is conducted in other domains and identifies potentially useful practices."
+  },
+  {
+    "paper_id": "1810.13348v4",
+    "title": "Multimodal Machine Learning for Automated ICD Coding",
+    "abstract": "This study presents a multimodal machine learning model to predict ICD-10 diagnostic codes. We developed separate machine learning models that can handle data from different modalities, including unstructured text, semi-structured text and structured tabular data. We further employed an ensemble method to integrate all modality-specific models to generate ICD-10 codes. Key evidence was also extracted to make our prediction more convincing and explainable. We used the Medical Information Mart for Intensive Care III (MIMIC -III) dataset to validate our approach. For ICD code prediction, our best-performing model (micro-F1 = 0.7633, micro-AUC = 0.9541) significantly outperforms other baseline models including TF-IDF (micro-F1 = 0.6721, micro-AUC = 0.7879) and Text-CNN model (micro-F1 = 0.6569, micro-AUC = 0.9235). For interpretability, our approach achieves a Jaccard Similarity Coefficient (JSC) of 0.1806 on text data and 0.3105 on tabular data, where well-trained physicians achieve 0.2780 and 0.5002 respectively.",
+    "published_year": "2018",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1810.13348v4",
+    "pdf_url": "https://arxiv.org/pdf/1810.13348v4.pdf",
+    "summary": "This study presents a multimodal machine learning model to predict ICD-10 diagnostic codes. We developed separate machine learning models that can handle data from different modalities, including unstructured text, semi-structured text and structured tabular data."
+  },
+  {
+    "paper_id": "1905.06549v2",
+    "title": "TapNet: Neural Network Augmented with Task-Adaptive Projection for Few-Shot Learning",
+    "abstract": "Handling previously unseen tasks after given only a few training examples continues to be a tough challenge in machine learning. We propose TapNets, neural networks augmented with task-adaptive projection for improved few-shot learning. Here, employing a meta-learning strategy with episode-based training, a network and a set of per-class reference vectors are learned across widely varying tasks. At the same time, for every episode, features in the embedding space are linearly projected into a new space as a form of quick task-specific conditioning. The training loss is obtained based on a distance metric between the query and the reference vectors in the projection space. Excellent generalization results in this way. When tested on the Omniglot, miniImageNet and tieredImageNet datasets, we obtain state of the art classification accuracies under various few-shot scenarios.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1905.06549v2",
+    "pdf_url": "https://arxiv.org/pdf/1905.06549v2.pdf",
+    "summary": "Handling previously unseen tasks after given only a few training examples continues to be a tough challenge in machine learning. We propose TapNets, neural networks augmented with task-adaptive projection for improved few-shot learning."
+  },
+  {
+    "paper_id": "1811.07216v2",
+    "title": "Machine Learning for Health (ML4H) Workshop at NeurIPS 2018",
+    "abstract": "This volume represents the accepted submissions from the Machine Learning for Health (ML4H) workshop at the conference on Neural Information Processing Systems (NeurIPS) 2018, held on December 8, 2018 in Montreal, Canada.",
+    "published_year": "2018",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1811.07216v2",
+    "pdf_url": "https://arxiv.org/pdf/1811.07216v2.pdf",
+    "summary": "This volume represents the accepted submissions from the Machine Learning for Health (ML4H) workshop at the conference on Neural Information Processing Systems (NeurIPS) 2018, held on December 8, 2018 in Montreal, Canada.."
+  },
+  {
+    "paper_id": "1911.00623v2",
+    "title": "On-Device Machine Learning: An Algorithms and Learning Theory Perspective",
+    "abstract": "The predominant paradigm for using machine learning models on a device is to train a model in the cloud and perform inference using the trained model on the device. However, with increasing number of smart devices and improved hardware, there is interest in performing model training on the device. Given this surge in interest, a comprehensive survey of the field from a device-agnostic perspective sets the stage for both understanding the state-of-the-art and for identifying open challenges and future avenues of research. However, on-device learning is an expansive field with connections to a large number of related topics in AI and machine learning (including online learning, model adaptation, one/few-shot learning, etc.). Hence, covering such a large number of topics in a single survey is impractical. This survey finds a middle ground by reformulating the problem of on-device learning as resource constrained learning where the resources are compute and memory. This reformulation allows tools, techniques, and algorithms from a wide variety of research areas to be compared equitably. In addition to summarizing the state-of-the-art, the survey also identifies a number of challenges and next steps for both the algorithmic and theoretical aspects of on-device learning.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1911.00623v2",
+    "pdf_url": "https://arxiv.org/pdf/1911.00623v2.pdf",
+    "summary": "The predominant paradigm for using machine learning models on a device is to train a model in the cloud and perform inference using the trained model on the device. However, with increasing number of smart devices and improved hardware, there is interest in performing model training on the device."
+  },
+  {
+    "paper_id": "1911.07679v1",
+    "title": "Towards Quantification of Bias in Machine Learning for Healthcare: A Case Study of Renal Failure Prediction",
+    "abstract": "As machine learning (ML) models, trained on real-world datasets, become common practice, it is critical to measure and quantify their potential biases. In this paper, we focus on renal failure and compare a commonly used traditional risk score, Tangri, with a more powerful machine learning model, which has access to a larger variable set and trained on 1.6 million patients' EHR data. We will compare and discuss the generalization and applicability of these two models, in an attempt to quantify biases of status quo clinical practice, compared to ML-driven models.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1911.07679v1",
+    "pdf_url": "https://arxiv.org/pdf/1911.07679v1.pdf",
+    "summary": "As machine learning (ML) models, trained on real-world datasets, become common practice, it is critical to measure and quantify their potential biases. In this paper, we focus on renal failure and compare a commonly used traditional risk score, Tangri, with a more powerful machine learning model, which has access to a larger variable set and trained on 1.6 million patients' EHR data."
+  },
+  {
+    "paper_id": "1901.09697v5",
+    "title": "Bayesian Differential Privacy for Machine Learning",
+    "abstract": "Traditional differential privacy is independent of the data distribution. However, this is not well-matched with the modern machine learning context, where models are trained on specific data. As a result, achieving meaningful privacy guarantees in ML often excessively reduces accuracy. We propose Bayesian differential privacy (BDP), which takes into account the data distribution to provide more practical privacy guarantees. We also derive a general privacy accounting method under BDP, building upon the well-known moments accountant. Our experiments demonstrate that in-distribution samples in classic machine learning datasets, such as MNIST and CIFAR-10, enjoy significantly stronger privacy guarantees than postulated by DP, while models maintain high classification accuracy.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1901.09697v5",
+    "pdf_url": "https://arxiv.org/pdf/1901.09697v5.pdf",
+    "summary": "Traditional differential privacy is independent of the data distribution. However, this is not well-matched with the modern machine learning context, where models are trained on specific data."
+  },
+  {
+    "paper_id": "2306.11113v2",
+    "title": "Learn to Accumulate Evidence from All Training Samples: Theory and Practice",
+    "abstract": "Evidential deep learning, built upon belief theory and subjective logic, offers a principled and computationally efficient way to turn a deterministic neural network uncertainty-aware. The resultant evidential models can quantify fine-grained uncertainty using the learned evidence. To ensure theoretically sound evidential models, the evidence needs to be non-negative, which requires special activation functions for model training and inference. This constraint often leads to inferior predictive performance compared to standard softmax models, making it challenging to extend them to many large-scale datasets. To unveil the real cause of this undesired behavior, we theoretically investigate evidential models and identify a fundamental limitation that explains the inferior performance: existing evidential activation functions create zero evidence regions, which prevent the model to learn from training samples falling into such regions. A deeper analysis of evidential activation functions based on our theoretical underpinning inspires the design of a novel regularizer that effectively alleviates this fundamental limitation. Extensive experiments over many challenging real-world datasets and settings confirm our theoretical findings and demonstrate the effectiveness of our proposed approach.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2306.11113v2",
+    "pdf_url": "https://arxiv.org/pdf/2306.11113v2.pdf",
+    "summary": "AI Analysis: Evidential deep learning (EDL) models, despite quantifying uncertainty, suffer from inferior predictive performance compared to standard neural networks due to specialized activation functions required for non-negative evidence. This research theoretically identifies that existing evidential activation functions create \"zero evidence regions,\" which fundamentally limit learning from specific training samples, and proposes a novel regularizer to alleviate this issue. Experimental results confirm these theoretical findings and demonstrate the effectiveness of their proposed approach in significantly improving EDL's predictive capabilities across challenging datasets."
+  },
+  {
+    "paper_id": "2105.04026v2",
+    "title": "The Modern Mathematics of Deep Learning",
+    "abstract": "We describe the new field of mathematical analysis of deep learning. This field emerged around a list of research questions that were not answered within the classical framework of learning theory. These questions concern: the outstanding generalization power of overparametrized neural networks, the role of depth in deep architectures, the apparent absence of the curse of dimensionality, the surprisingly successful optimization performance despite the non-convexity of the problem, understanding what features are learned, why deep architectures perform exceptionally well in physical problems, and which fine aspects of an architecture affect the behavior of a learning task in which way. We present an overview of modern approaches that yield partial answers to these questions. For selected approaches, we describe the main ideas in more detail.",
+    "published_year": "2021",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2105.04026v2",
+    "pdf_url": "https://arxiv.org/pdf/2105.04026v2.pdf",
+    "summary": "AI Analysis: This abstract addresses the inability of classical learning theory to explain key deep learning phenomena, including the generalization power of overparametrized networks, the role of depth, and successful non-convex optimization. It introduces the new field of mathematical analysis of deep learning, which surveys modern approaches developed to provide partial answers to these fundamental questions. The significance lies in establishing a theoretical framework to bridge the gap between deep learning's empirical success and its underlying mathematical principles."
+  },
+  {
+    "paper_id": "2301.00942v1",
+    "title": "Deep Learning and Computational Physics (Lecture Notes)",
+    "abstract": "These notes were compiled as lecture notes for a course developed and taught at the University of the Southern California. They should be accessible to a typical engineering graduate student with a strong background in Applied Mathematics.   The main objective of these notes is to introduce a student who is familiar with concepts in linear algebra and partial differential equations to select topics in deep learning. These lecture notes exploit the strong connections between deep learning algorithms and the more conventional techniques of computational physics to achieve two goals. First, they use concepts from computational physics to develop an understanding of deep learning algorithms. Not surprisingly, many concepts in deep learning can be connected to similar concepts in computational physics, and one can utilize this connection to better understand these algorithms. Second, several novel deep learning algorithms can be used to solve challenging problems in computational physics. Thus, they offer someone who is interested in modeling a physical phenomena with a complementary set of tools.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2301.00942v1",
+    "pdf_url": "https://arxiv.org/pdf/2301.00942v1.pdf",
+    "summary": "AI Analysis: This abstract addresses the challenge of introducing deep learning concepts to engineering graduate students already proficient in computational physics. Its core contribution is to exploit the strong connections between deep learning algorithms and conventional computational physics techniques. This dual approach both uses physics concepts to explain deep learning and applies novel deep learning algorithms to solve challenging problems in computational physics, providing a complementary set of tools for modeling physical phenomena."
+  },
+  {
+    "paper_id": "1711.00146v1",
+    "title": "A multitask deep learning model for real-time deployment in embedded systems",
+    "abstract": "We propose an approach to Multitask Learning (MTL) to make deep learning models faster and lighter for applications in which multiple tasks need to be solved simultaneously, which is particularly useful in embedded, real-time systems. We develop a multitask model for both Object Detection and Semantic Segmentation and analyze the challenges that appear during its training. Our multitask network is 1.6x faster, lighter and uses less memory than deploying the single-task models in parallel. We conclude that MTL has the potential to give superior performance in exchange of a more complex training process that introduces challenges not present in single-task models.",
+    "published_year": "2017",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1711.00146v1",
+    "pdf_url": "https://arxiv.org/pdf/1711.00146v1.pdf",
+    "summary": "AI Analysis: The primary problem addressed is the computational inefficiency (speed, size, memory) of simultaneously deploying multiple deep learning models in embedded, real-time systems. The core technical contribution is a Multitask Learning (MTL) network that integrates Object Detection and Semantic Segmentation. This MTL approach significantly improves efficiency, being 1.6x faster, lighter, and using less memory than parallel single-task models, albeit with a more complex training process."
+  },
+  {
+    "paper_id": "1903.03040v2",
+    "title": "Deep learning observables in computational fluid dynamics",
+    "abstract": "Many large scale problems in computational fluid dynamics such as uncertainty quantification, Bayesian inversion, data assimilation and PDE constrained optimization are considered very challenging computationally as they require a large number of expensive (forward) numerical solutions of the corresponding PDEs. We propose a machine learning algorithm, based on deep artificial neural networks, that predicts the underlying \\emph{input parameters to observable} map from a few training samples (computed realizations of this map). By a judicious combination of theoretical arguments and empirical observations, we find suitable network architectures and training hyperparameters that result in robust and efficient neural network approximations of the parameters to observable map. Numerical experiments are presented to demonstrate low prediction errors for the trained network networks, even when the network has been trained with a few samples, at a computational cost which is several orders of magnitude lower than the underlying PDE solver.   Moreover, we combine the proposed deep learning algorithm with Monte Carlo (MC) and Quasi-Monte Carlo (QMC) methods to efficiently compute uncertainty propagation for nonlinear PDEs. Under the assumption that the underlying neural networks generalize well, we prove that the deep learning MC and QMC algorithms are guaranteed to be faster than the baseline (quasi-) Monte Carlo methods. Numerical experiments demonstrating one to two orders of magnitude speed up over baseline QMC and MC algorithms, for the intricate problem of computing probability distributions of the observable, are also presented.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1903.03040v2",
+    "pdf_url": "https://arxiv.org/pdf/1903.03040v2.pdf",
+    "summary": "AI Analysis: The abstract addresses the computational challenge of large-scale fluid dynamics problems (e.g., UQ, Bayesian inversion) that require numerous expensive PDE solutions. It proposes a deep learning algorithm, based on neural networks, to efficiently predict the \"input parameters to observable\" map from limited training data, further integrating it with Monte Carlo methods for uncertainty propagation. This approach achieves low prediction errors, providing orders of magnitude computational speed-up over traditional PDE solvers and proven 1-2 orders of magnitude acceleration over baseline (Q)MC methods."
+  },
+  {
+    "paper_id": "2012.06469v1",
+    "title": "DILIE: Deep Internal Learning for Image Enhancement",
+    "abstract": "We consider the generic deep image enhancement problem where an input image is transformed into a perceptually better-looking image. Recent methods for image enhancement consider the problem by performing style transfer and image restoration. The methods mostly fall into two categories: training data-based and training data-independent (deep internal learning methods). We perform image enhancement in the deep internal learning framework. Our Deep Internal Learning for Image Enhancement framework enhances content features and style features and uses contextual content loss for preserving image context in the enhanced image. We show results on both hazy and noisy image enhancement. To validate the results, we use structure similarity and perceptual error, which is efficient in measuring the unrealistic deformation present in the images. We show that the proposed framework outperforms the relevant state-of-the-art works for image enhancement.",
+    "published_year": "2020",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2012.06469v1",
+    "pdf_url": "https://arxiv.org/pdf/2012.06469v1.pdf",
+    "summary": "AI Analysis: This paper addresses the deep image enhancement problem, aiming to transform input images into perceptually superior versions. Its core technical contribution is a training data-independent Deep Internal Learning framework that enhances content and style features, utilizing contextual content loss to preserve image context. The framework demonstrates superior performance on hazy and noisy images, validated with SSIM and perceptual error metrics, outperforming relevant state-of-the-art methods."
+  },
+  {
+    "paper_id": "2512.23753v1",
+    "title": "Generalized Regularized Evidential Deep Learning Models: Theory and Comprehensive Evaluation",
+    "abstract": "Evidential deep learning (EDL) models, based on Subjective Logic, introduce a principled and computationally efficient way to make deterministic neural networks uncertainty-aware. The resulting evidential models can quantify fine-grained uncertainty using learned evidence. However, the Subjective-Logic framework constrains evidence to be non-negative, requiring specific activation functions whose geometric properties can induce activation-dependent learning-freeze behavior: a regime where gradients become extremely small for samples mapped into low-evidence regions. We theoretically characterize this behavior and analyze how different evidential activations influence learning dynamics. Building on this analysis, we design a general family of activation functions and corresponding evidential regularizers that provide an alternative pathway for consistent evidence updates across activation regimes. Extensive experiments on four benchmark classification problems (MNIST, CIFAR-10, CIFAR-100, and Tiny-ImageNet), two few-shot classification problems, and blind face restoration problem empirically validate the developed theory and demonstrate the effectiveness of the proposed generalized regularized evidential models.",
+    "published_year": "2025",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2512.23753v1",
+    "pdf_url": "https://arxiv.org/pdf/2512.23753v1.pdf",
+    "summary": "Evidential deep learning (EDL) models, based on Subjective Logic, introduce a principled and computationally efficient way to make deterministic neural networks uncertainty-aware. The resulting evidential models can quantify fine-grained uncertainty using learned evidence."
+  },
+  {
+    "paper_id": "1903.04717v2",
+    "title": "Activation Analysis of a Byte-Based Deep Neural Network for Malware Classification",
+    "abstract": "Feature engineering is one of the most costly aspects of developing effective machine learning models, and that cost is even greater in specialized problem domains, like malware classification, where expert skills are necessary to identify useful features. Recent work, however, has shown that deep learning models can be used to automatically learn feature representations directly from the raw, unstructured bytes of the binaries themselves. In this paper, we explore what these models are learning about malware. To do so, we examine the learned features at multiple levels of resolution, from individual byte embeddings to end-to-end analysis of the model. At each step, we connect these byte-oriented activations to their original semantics through parsing and disassembly of the binary to arrive at human-understandable features. Through our results, we identify several interesting features learned by the model and their connection to manually-derived features typically used by traditional machine learning models. Additionally, we explore the impact of training data volume and regularization on the quality of the learned features and the efficacy of the classifiers, revealing the somewhat paradoxical insight that better generalization does not necessarily result in better performance for byte-based malware classifiers.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1903.04717v2",
+    "pdf_url": "https://arxiv.org/pdf/1903.04717v2.pdf",
+    "summary": "Feature engineering is one of the most costly aspects of developing effective machine learning models, and that cost is even greater in specialized problem domains, like malware classification, where expert skills are necessary to identify useful features. Recent work, however, has shown that deep learning models can be used to automatically learn feature representations directly from the raw, unstructured bytes of the binaries themselves."
+  },
+  {
+    "paper_id": "2302.04143v2",
+    "title": "Predicting Thrombectomy Recanalization from CT Imaging Using Deep Learning Models",
+    "abstract": "For acute ischemic stroke (AIS) patients with large vessel occlusions, clinicians must decide if the benefit of mechanical thrombectomy (MTB) outweighs the risks and potential complications following an invasive procedure. Pre-treatment computed tomography (CT) and angiography (CTA) are widely used to characterize occlusions in the brain vasculature. If a patient is deemed eligible, a modified treatment in cerebral ischemia (mTICI) score will be used to grade how well blood flow is reestablished throughout and following the MTB procedure. An estimation of the likelihood of successful recanalization can support treatment decision-making. In this study, we proposed a fully automated prediction of a patient's recanalization score using pre-treatment CT and CTA imaging. We designed a spatial cross attention network (SCANet) that utilizes vision transformers to localize to pertinent slices and brain regions. Our top model achieved an average cross-validated ROC-AUC of 77.33 $\\pm$ 3.9\\%. This is a promising result that supports future applications of deep learning on CT and CTA for the identification of eligible AIS patients for MTB.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2302.04143v2",
+    "pdf_url": "https://arxiv.org/pdf/2302.04143v2.pdf",
+    "summary": "For acute ischemic stroke (AIS) patients with large vessel occlusions, clinicians must decide if the benefit of mechanical thrombectomy (MTB) outweighs the risks and potential complications following an invasive procedure. Pre-treatment computed tomography (CT) and angiography (CTA) are widely used to characterize occlusions in the brain vasculature."
+  },
+  {
+    "paper_id": "2011.03712v1",
+    "title": "DeepCFL: Deep Contextual Features Learning from a Single Image",
+    "abstract": "Recently, there is a vast interest in developing image feature learning methods that are independent of the training data, such as deep image prior, InGAN, SinGAN, and DCIL. These methods are unsupervised and are used to perform low-level vision tasks such as image restoration, image editing, and image synthesis. In this work, we proposed a new training data-independent framework, called Deep Contextual Features Learning (DeepCFL), to perform image synthesis and image restoration based on the semantics of the input image. The contextual features are simply the high dimensional vectors representing the semantics of the given image. DeepCFL is a single image GAN framework that learns the distribution of the context vectors from the input image. We show the performance of contextual learning in various challenging scenarios: outpainting, inpainting, and restoration of randomly removed pixels. DeepCFL is applicable when the input source image and the generated target image are not aligned. We illustrate image synthesis using DeepCFL for the task of image resizing.",
+    "published_year": "2020",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2011.03712v1",
+    "pdf_url": "https://arxiv.org/pdf/2011.03712v1.pdf",
+    "summary": "Recently, there is a vast interest in developing image feature learning methods that are independent of the training data, such as deep image prior, InGAN, SinGAN, and DCIL. These methods are unsupervised and are used to perform low-level vision tasks such as image restoration, image editing, and image synthesis."
+  },
+  {
+    "paper_id": "2403.12562v2",
+    "title": "PePR: Performance Per Resource Unit as a Metric to Promote Small-Scale Deep Learning in Medical Image Analysis",
+    "abstract": "The recent advances in deep learning (DL) have been accelerated by access to large-scale data and compute. These large-scale resources have been used to train progressively larger models which are resource intensive in terms of compute, data, energy, and carbon emissions. These costs are becoming a new type of entry barrier to researchers and practitioners with limited access to resources at such scale, particularly in the Global South. In this work, we take a comprehensive look at the landscape of existing DL models for medical image analysis tasks and demonstrate their usefulness in settings where resources are limited. To account for the resource consumption of DL models, we introduce a novel measure to estimate the performance per resource unit, which we call the PePR score. Using a diverse family of 131 unique DL architectures (spanning 1M to 130M trainable parameters) and three medical image datasets, we capture trends about the performance-resource trade-offs. In applications like medical image analysis, we argue that small-scale, specialized models are better than striving for large-scale models. Furthermore, we show that using existing pretrained models that are fine-tuned on new data can significantly reduce the computational resources and data required compared to training models from scratch. We hope this work will encourage the community to focus on improving AI equity by developing methods and models with smaller resource footprints.",
+    "published_year": "2024",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2403.12562v2",
+    "pdf_url": "https://arxiv.org/pdf/2403.12562v2.pdf",
+    "summary": "The recent advances in deep learning (DL) have been accelerated by access to large-scale data and compute. These large-scale resources have been used to train progressively larger models which are resource intensive in terms of compute, data, energy, and carbon emissions."
+  },
+  {
+    "paper_id": "2107.02926v2",
+    "title": "Solution of Physics-based Bayesian Inverse Problems with Deep Generative Priors",
+    "abstract": "Inverse problems are ubiquitous in nature, arising in almost all areas of science and engineering ranging from geophysics and climate science to astrophysics and biomechanics. One of the central challenges in solving inverse problems is tackling their ill-posed nature. Bayesian inference provides a principled approach for overcoming this by formulating the inverse problem into a statistical framework. However, it is challenging to apply when inferring fields that have discrete representations of large dimensions (the so-called \"curse of dimensionality\") and/or when prior information is available only in the form of previously acquired solutions. In this work, we present a novel method for efficient and accurate Bayesian inversion using deep generative models. Specifically, we demonstrate how using the approximate distribution learned by a Generative Adversarial Network (GAN) as a prior in a Bayesian update and reformulating the resulting inference problem in the low-dimensional latent space of the GAN, enables the efficient solution of large-scale Bayesian inverse problems. Our statistical framework preserves the underlying physics and is demonstrated to yield accurate results with reliable uncertainty estimates, even in the absence of information about underlying noise model, which is a significant challenge with many existing methods. We demonstrate the effectiveness of proposed method on a variety of inverse problems which include both synthetic as well as experimentally observed data.",
+    "published_year": "2021",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2107.02926v2",
+    "pdf_url": "https://arxiv.org/pdf/2107.02926v2.pdf",
+    "summary": "Inverse problems are ubiquitous in nature, arising in almost all areas of science and engineering ranging from geophysics and climate science to astrophysics and biomechanics. One of the central challenges in solving inverse problems is tackling their ill-posed nature."
+  },
+  {
+    "paper_id": "2412.03084v2",
+    "title": "Hybrid deep learning-based strategy for the hepatocellular carcinoma cancer grade classification of H&E stained liver histopathology images",
+    "abstract": "Hepatocellular carcinoma (HCC) is a common type of liver cancer whose early-stage diagnosis is a common challenge, mainly due to the manual assessment of hematoxylin and eosin-stained whole slide images, which is a time-consuming process and may lead to variability in decision-making. For accurate detection of HCC, we propose a hybrid deep learning-based architecture that uses transfer learning to extract the features from pre-trained convolutional neural network (CNN) models and a classifier made up of a sequence of fully connected layers. This study uses a publicly available The Cancer Genome Atlas Hepatocellular Carcinoma (TCGA-LIHC)database (n=491) for model development and database of Kasturba Gandhi Medical College (KMC), India for validation. The pre-processing step involves patch extraction, colour normalization, and augmentation that results in 3920 patches for the TCGA dataset. The developed hybrid deep neural network consisting of a CNN-based pre-trained feature extractor and a customized artificial neural network-based classifier is trained using five-fold cross-validation. For this study, eight different state-of-the-art models are trained and tested as feature extractors for the proposed hybrid model. The proposed hybrid model with ResNet50-based feature extractor provided the sensitivity, specificity, F1-score, accuracy, and AUC of 100.00%, 100.00%, 100.00%, 100.00%, and 1.00, respectively on the TCGA database. On the KMC database, EfficientNetb3 resulted in the optimal choice of the feature extractor giving sensitivity, specificity, F1-score, accuracy, and AUC of 96.97, 98.85, 96.71, 96.71, and 0.99, respectively. The proposed hybrid models showed improvement in accuracy of 2% and 4% over the pre-trained models in TCGA-LIHC and KMC databases.",
+    "published_year": "2024",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2412.03084v2",
+    "pdf_url": "https://arxiv.org/pdf/2412.03084v2.pdf",
+    "summary": "Hepatocellular carcinoma (HCC) is a common type of liver cancer whose early-stage diagnosis is a common challenge, mainly due to the manual assessment of hematoxylin and eosin-stained whole slide images, which is a time-consuming process and may lead to variability in decision-making. For accurate detection of HCC, we propose a hybrid deep learning-based architecture that uses transfer learning to extract the features from pre-trained convolutional neural network (CNN) models and a classifier made up of a sequence of fully connected layers."
+  },
+  {
+    "paper_id": "1912.04229v1",
+    "title": "DCIL: Deep Contextual Internal Learning for Image Restoration and Image Retargeting",
+    "abstract": "Recently, there is a vast interest in developing methods which are independent of the training samples such as deep image prior, zero-shot learning, and internal learning. The methods above are based on the common goal of maximizing image features learning from a single image despite inherent technical diversity. In this work, we bridge the gap between the various unsupervised approaches above and propose a general framework for image restoration and image retargeting. We use contextual feature learning and internal learning to improvise the structure similarity between the source and the target images. We perform image resize application in the following setups: classical image resize using super-resolution, a challenging image resize where the low-resolution image contains noise, and content-aware image resize using image retargeting. We also provide comparisons to the relevant state-of-the-art methods.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1912.04229v1",
+    "pdf_url": "https://arxiv.org/pdf/1912.04229v1.pdf",
+    "summary": "Recently, there is a vast interest in developing methods which are independent of the training samples such as deep image prior, zero-shot learning, and internal learning. The methods above are based on the common goal of maximizing image features learning from a single image despite inherent technical diversity."
+  },
+  {
+    "paper_id": "2107.09957v2",
+    "title": "Memorization in Deep Neural Networks: Does the Loss Function matter?",
+    "abstract": "Deep Neural Networks, often owing to the overparameterization, are shown to be capable of exactly memorizing even randomly labelled data. Empirical studies have also shown that none of the standard regularization techniques mitigate such overfitting. We investigate whether the choice of the loss function can affect this memorization. We empirically show, with benchmark data sets MNIST and CIFAR-10, that a symmetric loss function, as opposed to either cross-entropy or squared error loss, results in significant improvement in the ability of the network to resist such overfitting. We then provide a formal definition for robustness to memorization and provide a theoretical explanation as to why the symmetric losses provide this robustness. Our results clearly bring out the role loss functions alone can play in this phenomenon of memorization.",
+    "published_year": "2021",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2107.09957v2",
+    "pdf_url": "https://arxiv.org/pdf/2107.09957v2.pdf",
+    "summary": "Deep Neural Networks, often owing to the overparameterization, are shown to be capable of exactly memorizing even randomly labelled data. Empirical studies have also shown that none of the standard regularization techniques mitigate such overfitting."
+  },
+  {
+    "paper_id": "1912.06732v2",
+    "title": "On the approximation of rough functions with deep neural networks",
+    "abstract": "Deep neural networks and the ENO procedure are both efficient frameworks for approximating rough functions. We prove that at any order, the ENO interpolation procedure can be cast as a deep ReLU neural network. This surprising fact enables the transfer of several desirable properties of the ENO procedure to deep neural networks, including its high-order accuracy at approximating Lipschitz functions. Numerical tests for the resulting neural networks show excellent performance for approximating solutions of nonlinear conservation laws and at data compression.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1912.06732v2",
+    "pdf_url": "https://arxiv.org/pdf/1912.06732v2.pdf",
+    "summary": "Deep neural networks and the ENO procedure are both efficient frameworks for approximating rough functions. We prove that at any order, the ENO interpolation procedure can be cast as a deep ReLU neural network."
+  },
+  {
+    "paper_id": "1902.02060v3",
+    "title": "On ADMM in Deep Learning: Convergence and Saturation-Avoidance",
+    "abstract": "In this paper, we develop an alternating direction method of multipliers (ADMM) for deep neural networks training with sigmoid-type activation functions (called \\textit{sigmoid-ADMM pair}), mainly motivated by the gradient-free nature of ADMM in avoiding the saturation of sigmoid-type activations and the advantages of deep neural networks with sigmoid-type activations (called deep sigmoid nets) over their rectified linear unit (ReLU) counterparts (called deep ReLU nets) in terms of approximation. In particular, we prove that the approximation capability of deep sigmoid nets is not worse than that of deep ReLU nets by showing that ReLU activation function can be well approximated by deep sigmoid nets with two hidden layers and finitely many free parameters but not vice-verse. We also establish the global convergence of the proposed ADMM for the nonlinearly constrained formulation of the deep sigmoid nets training from arbitrary initial points to a Karush-Kuhn-Tucker (KKT) point at a rate of order ${\\cal O}(1/k)$. Besides sigmoid activation, such a convergence theorem holds for a general class of smooth activations. Compared with the widely used stochastic gradient descent (SGD) algorithm for the deep ReLU nets training (called ReLU-SGD pair), the proposed sigmoid-ADMM pair is practically stable with respect to the algorithmic hyperparameters including the learning rate, initial schemes and the pro-processing of the input data. Moreover, we find that to approximate and learn simple but important functions the proposed sigmoid-ADMM pair numerically outperforms the ReLU-SGD pair.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1902.02060v3",
+    "pdf_url": "https://arxiv.org/pdf/1902.02060v3.pdf",
+    "summary": "In this paper, we develop an alternating direction method of multipliers (ADMM) for deep neural networks training with sigmoid-type activation functions (called \\textit{sigmoid-ADMM pair}), mainly motivated by the gradient-free nature of ADMM in avoiding the saturation of sigmoid-type activations and the advantages of deep neural networks with sigmoid-type activations (called deep sigmoid nets) over their rectified linear unit (ReLU) counterparts (called deep ReLU nets) in terms of approximation. In particular, we prove that the approximation capability of deep sigmoid nets is not worse than that of deep ReLU nets by showing that ReLU activation function can be well approximated by deep sigmoid nets with two hidden layers and finitely many free parameters but not vice-verse."
+  },
+  {
+    "paper_id": "1705.03921v1",
+    "title": "Why & When Deep Learning Works: Looking Inside Deep Learnings",
+    "abstract": "The Intel Collaborative Research Institute for Computational Intelligence (ICRI-CI) has been heavily supporting Machine Learning and Deep Learning research from its foundation in 2012. We have asked six leading ICRI-CI Deep Learning researchers to address the challenge of \"Why & When Deep Learning works\", with the goal of looking inside Deep Learning, providing insights on how deep networks function, and uncovering key observations on their expressiveness, limitations, and potential. The output of this challenge resulted in five papers that address different facets of deep learning. These different facets include a high-level understating of why and when deep networks work (and do not work), the impact of geometry on the expressiveness of deep networks, and making deep networks interpretable.",
+    "published_year": "2017",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1705.03921v1",
+    "pdf_url": "https://arxiv.org/pdf/1705.03921v1.pdf",
+    "summary": "The Intel Collaborative Research Institute for Computational Intelligence (ICRI-CI) has been heavily supporting Machine Learning and Deep Learning research from its foundation in 2012. We have asked six leading ICRI-CI Deep Learning researchers to address the challenge of \"Why & When Deep Learning works\", with the goal of looking inside Deep Learning, providing insights on how deep networks function, and uncovering key observations on their expressiveness, limitations, and potential."
+  },
+  {
+    "paper_id": "1706.09552v1",
+    "title": "Chord Label Personalization through Deep Learning of Integrated Harmonic Interval-based Representations",
+    "abstract": "The increasing accuracy of automatic chord estimation systems, the availability of vast amounts of heterogeneous reference annotations, and insights from annotator subjectivity research make chord label personalization increasingly important. Nevertheless, automatic chord estimation systems are historically exclusively trained and evaluated on a single reference annotation. We introduce a first approach to automatic chord label personalization by modeling subjectivity through deep learning of a harmonic interval-based chord label representation. After integrating these representations from multiple annotators, we can accurately personalize chord labels for individual annotators from a single model and the annotators' chord label vocabulary. Furthermore, we show that chord personalization using multiple reference annotations outperforms using a single reference annotation.",
+    "published_year": "2017",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1706.09552v1",
+    "pdf_url": "https://arxiv.org/pdf/1706.09552v1.pdf",
+    "summary": "The increasing accuracy of automatic chord estimation systems, the availability of vast amounts of heterogeneous reference annotations, and insights from annotator subjectivity research make chord label personalization increasingly important. Nevertheless, automatic chord estimation systems are historically exclusively trained and evaluated on a single reference annotation."
+  },
+  {
+    "paper_id": "1912.03905v2",
+    "title": "ChainerRL: A Deep Reinforcement Learning Library",
+    "abstract": "In this paper, we introduce ChainerRL, an open-source deep reinforcement learning (DRL) library built using Python and the Chainer deep learning framework. ChainerRL implements a comprehensive set of DRL algorithms and techniques drawn from state-of-the-art research in the field. To foster reproducible research, and for instructional purposes, ChainerRL provides scripts that closely replicate the original papers' experimental settings and reproduce published benchmark results for several algorithms. Lastly, ChainerRL offers a visualization tool that enables the qualitative inspection of trained agents. The ChainerRL source code can be found on GitHub: https://github.com/chainer/chainerrl.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1912.03905v2",
+    "pdf_url": "https://arxiv.org/pdf/1912.03905v2.pdf",
+    "summary": "In this paper, we introduce ChainerRL, an open-source deep reinforcement learning (DRL) library built using Python and the Chainer deep learning framework. ChainerRL implements a comprehensive set of DRL algorithms and techniques drawn from state-of-the-art research in the field."
+  },
+  {
+    "paper_id": "1708.05866v2",
+    "title": "A Brief Survey of Deep Reinforcement Learning",
+    "abstract": "Deep reinforcement learning is poised to revolutionise the field of AI and represents a step towards building autonomous systems with a higher level understanding of the visual world. Currently, deep learning is enabling reinforcement learning to scale to problems that were previously intractable, such as learning to play video games directly from pixels. Deep reinforcement learning algorithms are also applied to robotics, allowing control policies for robots to be learned directly from camera inputs in the real world. In this survey, we begin with an introduction to the general field of reinforcement learning, then progress to the main streams of value-based and policy-based methods. Our survey will cover central algorithms in deep reinforcement learning, including the deep $Q$-network, trust region policy optimisation, and asynchronous advantage actor-critic. In parallel, we highlight the unique advantages of deep neural networks, focusing on visual understanding via reinforcement learning. To conclude, we describe several current areas of research within the field.",
+    "published_year": "2017",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1708.05866v2",
+    "pdf_url": "https://arxiv.org/pdf/1708.05866v2.pdf",
+    "summary": "Deep reinforcement learning is poised to revolutionise the field of AI and represents a step towards building autonomous systems with a higher level understanding of the visual world. Currently, deep learning is enabling reinforcement learning to scale to problems that were previously intractable, such as learning to play video games directly from pixels."
+  },
+  {
+    "paper_id": "2004.14545v2",
+    "title": "Explainable Deep Learning: A Field Guide for the Uninitiated",
+    "abstract": "Deep neural networks (DNNs) have become a proven and indispensable machine learning tool. As a black-box model, it remains difficult to diagnose what aspects of the model's input drive the decisions of a DNN. In countless real-world domains, from legislation and law enforcement to healthcare, such diagnosis is essential to ensure that DNN decisions are driven by aspects appropriate in the context of its use. The development of methods and studies enabling the explanation of a DNN's decisions has thus blossomed into an active, broad area of research. A practitioner wanting to study explainable deep learning may be intimidated by the plethora of orthogonal directions the field has taken. This complexity is further exacerbated by competing definitions of what it means ``to explain'' the actions of a DNN and to evaluate an approach's ``ability to explain''. This article offers a field guide to explore the space of explainable deep learning aimed at those uninitiated in the field. The field guide: i) Introduces three simple dimensions defining the space of foundational methods that contribute to explainable deep learning, ii) discusses the evaluations for model explanations, iii) places explainability in the context of other related deep learning research areas, and iv) finally elaborates on user-oriented explanation designing and potential future directions on explainable deep learning. We hope the guide is used as an easy-to-digest starting point for those just embarking on research in this field.",
+    "published_year": "2020",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2004.14545v2",
+    "pdf_url": "https://arxiv.org/pdf/2004.14545v2.pdf",
+    "summary": "Deep neural networks (DNNs) have become a proven and indispensable machine learning tool. As a black-box model, it remains difficult to diagnose what aspects of the model's input drive the decisions of a DNN."
+  },
+  {
+    "paper_id": "1604.08153v3",
+    "title": "Classifying Options for Deep Reinforcement Learning",
+    "abstract": "In this paper we combine one method for hierarchical reinforcement learning - the options framework - with deep Q-networks (DQNs) through the use of different \"option heads\" on the policy network, and a supervisory network for choosing between the different options. We utilise our setup to investigate the effects of architectural constraints in subtasks with positive and negative transfer, across a range of network capacities. We empirically show that our augmented DQN has lower sample complexity when simultaneously learning subtasks with negative transfer, without degrading performance when learning subtasks with positive transfer.",
+    "published_year": "2016",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1604.08153v3",
+    "pdf_url": "https://arxiv.org/pdf/1604.08153v3.pdf",
+    "summary": "In this paper we combine one method for hierarchical reinforcement learning - the options framework - with deep Q-networks (DQNs) through the use of different \"option heads\" on the policy network, and a supervisory network for choosing between the different options. We utilise our setup to investigate the effects of architectural constraints in subtasks with positive and negative transfer, across a range of network capacities."
+  },
+  {
+    "paper_id": "1801.00904v4",
+    "title": "ScreenerNet: Learning Self-Paced Curriculum for Deep Neural Networks",
+    "abstract": "We propose to learn a curriculum or a syllabus for supervised learning and deep reinforcement learning with deep neural networks by an attachable deep neural network, called ScreenerNet. Specifically, we learn a weight for each sample by jointly training the ScreenerNet and the main network in an end-to-end self-paced fashion. The ScreenerNet neither has sampling bias nor requires to remember the past learning history. We show the networks augmented with the ScreenerNet achieve early convergence with better accuracy than the state-of-the-art curricular learning methods in extensive experiments using three popular vision datasets such as MNIST, CIFAR10 and Pascal VOC2012, and a Cart-pole task using Deep Q-learning. Moreover, the ScreenerNet can extend other curriculum learning methods such as Prioritized Experience Replay (PER) for further accuracy improvement.",
+    "published_year": "2018",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1801.00904v4",
+    "pdf_url": "https://arxiv.org/pdf/1801.00904v4.pdf",
+    "summary": "We propose to learn a curriculum or a syllabus for supervised learning and deep reinforcement learning with deep neural networks by an attachable deep neural network, called ScreenerNet. Specifically, we learn a weight for each sample by jointly training the ScreenerNet and the main network in an end-to-end self-paced fashion."
+  },
+  {
+    "paper_id": "1811.09385v2",
+    "title": "On the Importance of Strong Baselines in Bayesian Deep Learning",
+    "abstract": "Like all sub-fields of machine learning Bayesian Deep Learning is driven by empirical validation of its theoretical proposals. Given the many aspects of an experiment it is always possible that minor or even major experimental flaws can slip by both authors and reviewers. One of the most popular experiments used to evaluate approximate inference techniques is the regression experiment on UCI datasets. However, in this experiment, models which have been trained to convergence have often been compared with baselines trained only for a fixed number of iterations. We find that a well-established baseline, Monte Carlo dropout, when evaluated under the same experimental settings shows significant improvements. In fact, the baseline outperforms or performs competitively with methods that claimed to be superior to the very same baseline method when they were introduced. Hence, by exposing this flaw in experimental procedure, we highlight the importance of using identical experimental setups to evaluate, compare, and benchmark methods in Bayesian Deep Learning.",
+    "published_year": "2018",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1811.09385v2",
+    "pdf_url": "https://arxiv.org/pdf/1811.09385v2.pdf",
+    "summary": "Like all sub-fields of machine learning Bayesian Deep Learning is driven by empirical validation of its theoretical proposals. Given the many aspects of an experiment it is always possible that minor or even major experimental flaws can slip by both authors and reviewers."
+  },
+  {
+    "paper_id": "1710.05468v9",
+    "title": "Generalization in Deep Learning",
+    "abstract": "This paper provides theoretical insights into why and how deep learning can generalize well, despite its large capacity, complexity, possible algorithmic instability, nonrobustness, and sharp minima, responding to an open question in the literature. We also discuss approaches to provide non-vacuous generalization guarantees for deep learning. Based on theoretical observations, we propose new open problems and discuss the limitations of our results.",
+    "published_year": "2017",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1710.05468v9",
+    "pdf_url": "https://arxiv.org/pdf/1710.05468v9.pdf",
+    "summary": "This paper provides theoretical insights into why and how deep learning can generalize well, despite its large capacity, complexity, possible algorithmic instability, nonrobustness, and sharp minima, responding to an open question in the literature. We also discuss approaches to provide non-vacuous generalization guarantees for deep learning."
+  },
+  {
+    "paper_id": "1902.09154v1",
+    "title": "Deep Bayesian Multi-Target Learning for Recommender Systems",
+    "abstract": "With the increasing variety of services that e-commerce platforms provide, criteria for evaluating their success become also increasingly multi-targeting. This work introduces a multi-target optimization framework with Bayesian modeling of the target events, called Deep Bayesian Multi-Target Learning (DBMTL). In this framework, target events are modeled as forming a Bayesian network, in which directed links are parameterized by hidden layers, and learned from training samples. The structure of Bayesian network is determined by model selection. We applied the framework to Taobao live-streaming recommendation, to simultaneously optimize (and strike a balance) on targets including click-through rate, user stay time in live room, purchasing behaviors and interactions. Significant improvement has been observed for the proposed method over other MTL frameworks and the non-MTL model. Our practice shows that with an integrated causality structure, we can effectively make the learning of a target benefit from other targets, creating significant synergy effects that improve all targets. The neural network construction guided by DBMTL fits in with the general probabilistic model connecting features and multiple targets, taking weaker assumption than the other methods discussed in this paper. This theoretical generality brings about practical generalization power over various targets distributions, including sparse targets and continuous-value ones.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1902.09154v1",
+    "pdf_url": "https://arxiv.org/pdf/1902.09154v1.pdf",
+    "summary": "With the increasing variety of services that e-commerce platforms provide, criteria for evaluating their success become also increasingly multi-targeting. This work introduces a multi-target optimization framework with Bayesian modeling of the target events, called Deep Bayesian Multi-Target Learning (DBMTL)."
+  },
+  {
+    "paper_id": "1701.07274v6",
+    "title": "Deep Reinforcement Learning: An Overview",
+    "abstract": "We give an overview of recent exciting achievements of deep reinforcement learning (RL). We discuss six core elements, six important mechanisms, and twelve applications. We start with background of machine learning, deep learning and reinforcement learning. Next we discuss core RL elements, including value function, in particular, Deep Q-Network (DQN), policy, reward, model, planning, and exploration. After that, we discuss important mechanisms for RL, including attention and memory, unsupervised learning, transfer learning, multi-agent RL, hierarchical RL, and learning to learn. Then we discuss various applications of RL, including games, in particular, AlphaGo, robotics, natural language processing, including dialogue systems, machine translation, and text generation, computer vision, neural architecture design, business management, finance, healthcare, Industry 4.0, smart grid, intelligent transportation systems, and computer systems. We mention topics not reviewed yet, and list a collection of RL resources. After presenting a brief summary, we close with discussions.   Please see Deep Reinforcement Learning, arXiv:1810.06339, for a significant update.",
+    "published_year": "2017",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1701.07274v6",
+    "pdf_url": "https://arxiv.org/pdf/1701.07274v6.pdf",
+    "summary": "We give an overview of recent exciting achievements of deep reinforcement learning (RL). We discuss six core elements, six important mechanisms, and twelve applications."
+  },
+  {
+    "paper_id": "1812.00922v1",
+    "title": "Multi-agent Deep Reinforcement Learning with Extremely Noisy Observations",
+    "abstract": "Multi-agent reinforcement learning systems aim to provide interacting agents with the ability to collaboratively learn and adapt to the behaviour of other agents. In many real-world applications, the agents can only acquire a partial view of the world. Here we consider a setting whereby most agents' observations are also extremely noisy, hence only weakly correlated to the true state of the environment. Under these circumstances, learning an optimal policy becomes particularly challenging, even in the unrealistic case that an agent's policy can be made conditional upon all other agents' observations. To overcome these difficulties, we propose a multi-agent deep deterministic policy gradient algorithm enhanced by a communication medium (MADDPG-M), which implements a two-level, concurrent learning mechanism. An agent's policy depends on its own private observations as well as those explicitly shared by others through a communication medium. At any given point in time, an agent must decide whether its private observations are sufficiently informative to be shared with others. However, our environments provide no explicit feedback informing an agent whether a communication action is beneficial, rather the communication policies must also be learned through experience concurrently to the main policies. Our experimental results demonstrate that the algorithm performs well in six highly non-stationary environments of progressively higher complexity, and offers substantial performance gains compared to the baselines.",
+    "published_year": "2018",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1812.00922v1",
+    "pdf_url": "https://arxiv.org/pdf/1812.00922v1.pdf",
+    "summary": "Multi-agent reinforcement learning systems aim to provide interacting agents with the ability to collaboratively learn and adapt to the behaviour of other agents. In many real-world applications, the agents can only acquire a partial view of the world."
+  },
+  {
+    "paper_id": "1911.11285v1",
+    "title": "Biologically inspired architectures for sample-efficient deep reinforcement learning",
+    "abstract": "Deep reinforcement learning requires a heavy price in terms of sample efficiency and overparameterization in the neural networks used for function approximation. In this work, we use tensor factorization in order to learn more compact representation for reinforcement learning policies. We show empirically that in the low-data regime, it is possible to learn online policies with 2 to 10 times less total coefficients, with little to no loss of performance. We also leverage progress in second order optimization, and use the theory of wavelet scattering to further reduce the number of learned coefficients, by foregoing learning the topmost convolutional layer filters altogether. We evaluate our results on the Atari suite against recent baseline algorithms that represent the state-of-the-art in data efficiency, and get comparable results with an order of magnitude gain in weight parsimony.",
+    "published_year": "2019",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/1911.11285v1",
+    "pdf_url": "https://arxiv.org/pdf/1911.11285v1.pdf",
+    "summary": "Deep reinforcement learning requires a heavy price in terms of sample efficiency and overparameterization in the neural networks used for function approximation. In this work, we use tensor factorization in order to learn more compact representation for reinforcement learning policies."
+  },
+  {
+    "paper_id": "2501.05032v2",
+    "title": "Enhancing Human-Like Responses in Large Language Models",
+    "abstract": "This paper explores the advancements in making large language models (LLMs) more human-like. We focus on techniques that enhance natural language understanding, conversational coherence, and emotional intelligence in AI systems. The study evaluates various approaches, including fine-tuning with diverse datasets, incorporating psychological principles, and designing models that better mimic human reasoning patterns. Our findings demonstrate that these enhancements not only improve user interactions but also open new possibilities for AI applications across different domains. Future work will address the ethical implications and potential biases introduced by these human-like attributes.",
+    "published_year": "2025",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2501.05032v2",
+    "pdf_url": "https://arxiv.org/pdf/2501.05032v2.pdf",
+    "summary": "This paper explores the advancements in making large language models (LLMs) more human-like. We focus on techniques that enhance natural language understanding, conversational coherence, and emotional intelligence in AI systems."
+  },
+  {
+    "paper_id": "2402.14679v2",
+    "title": "Is Self-knowledge and Action Consistent or Not: Investigating Large Language Model's Personality",
+    "abstract": "In this study, we delve into the validity of conventional personality questionnaires in capturing the human-like personality traits of Large Language Models (LLMs). Our objective is to assess the congruence between the personality traits LLMs claim to possess and their demonstrated tendencies in real-world scenarios. By conducting an extensive examination of LLM outputs against observed human response patterns, we aim to understand the disjunction between self-knowledge and action in LLMs.",
+    "published_year": "2024",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2402.14679v2",
+    "pdf_url": "https://arxiv.org/pdf/2402.14679v2.pdf",
+    "summary": "In this study, we delve into the validity of conventional personality questionnaires in capturing the human-like personality traits of Large Language Models (LLMs). Our objective is to assess the congruence between the personality traits LLMs claim to possess and their demonstrated tendencies in real-world scenarios."
+  },
+  {
+    "paper_id": "2405.11357v3",
+    "title": "Large Language Models Lack Understanding of Character Composition of Words",
+    "abstract": "Large language models (LLMs) have demonstrated remarkable performances on a wide range of natural language tasks. Yet, LLMs' successes have been largely restricted to tasks concerning words, sentences, or documents, and it remains questionable how much they understand the minimal units of text, namely characters. In this paper, we examine contemporary LLMs regarding their ability to understand character composition of words, and show that most of them fail to reliably carry out even the simple tasks that can be handled by humans with perfection. We analyze their behaviors with comparison to token level performances, and discuss the potential directions for future research.",
+    "published_year": "2024",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2405.11357v3",
+    "pdf_url": "https://arxiv.org/pdf/2405.11357v3.pdf",
+    "summary": "Large language models (LLMs) have demonstrated remarkable performances on a wide range of natural language tasks. Yet, LLMs' successes have been largely restricted to tasks concerning words, sentences, or documents, and it remains questionable how much they understand the minimal units of text, namely characters."
+  },
+  {
+    "paper_id": "2403.09676v1",
+    "title": "Unmasking the Shadows of AI: Investigating Deceptive Capabilities in Large Language Models",
+    "abstract": "This research critically navigates the intricate landscape of AI deception, concentrating on deceptive behaviours of Large Language Models (LLMs). My objective is to elucidate this issue, examine the discourse surrounding it, and subsequently delve into its categorization and ramifications. The essay initiates with an evaluation of the AI Safety Summit 2023 (ASS) and introduction of LLMs, emphasising multidimensional biases that underlie their deceptive behaviours.The literature review covers four types of deception categorised: Strategic deception, Imitation, Sycophancy, and Unfaithful Reasoning, along with the social implications and risks they entail. Lastly, I take an evaluative stance on various aspects related to navigating the persistent challenges of the deceptive AI. This encompasses considerations of international collaborative governance, the reconfigured engagement of individuals with AI, proposal of practical adjustments, and specific elements of digital education.",
+    "published_year": "2024",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2403.09676v1",
+    "pdf_url": "https://arxiv.org/pdf/2403.09676v1.pdf",
+    "summary": "This research critically navigates the intricate landscape of AI deception, concentrating on deceptive behaviours of Large Language Models (LLMs). My objective is to elucidate this issue, examine the discourse surrounding it, and subsequently delve into its categorization and ramifications."
+  },
+  {
+    "paper_id": "2407.01505v1",
+    "title": "Self-Cognition in Large Language Models: An Exploratory Study",
+    "abstract": "While Large Language Models (LLMs) have achieved remarkable success across various applications, they also raise concerns regarding self-cognition. In this paper, we perform a pioneering study to explore self-cognition in LLMs. Specifically, we first construct a pool of self-cognition instruction prompts to evaluate where an LLM exhibits self-cognition and four well-designed principles to quantify LLMs' self-cognition. Our study reveals that 4 of the 48 models on Chatbot Arena--specifically Command R, Claude3-Opus, Llama-3-70b-Instruct, and Reka-core--demonstrate some level of detectable self-cognition. We observe a positive correlation between model size, training data quality, and self-cognition level. Additionally, we also explore the utility and trustworthiness of LLM in the self-cognition state, revealing that the self-cognition state enhances some specific tasks such as creative writing and exaggeration. We believe that our work can serve as an inspiration for further research to study the self-cognition in LLMs.",
+    "published_year": "2024",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2407.01505v1",
+    "pdf_url": "https://arxiv.org/pdf/2407.01505v1.pdf",
+    "summary": "While Large Language Models (LLMs) have achieved remarkable success across various applications, they also raise concerns regarding self-cognition. In this paper, we perform a pioneering study to explore self-cognition in LLMs."
+  },
+  {
+    "paper_id": "2309.02144v1",
+    "title": "Making Large Language Models Better Reasoners with Alignment",
+    "abstract": "Reasoning is a cognitive process of using evidence to reach a sound conclusion. The reasoning capability is essential for large language models (LLMs) to serve as the brain of the artificial general intelligence agent. Recent studies reveal that fine-tuning LLMs on data with the chain of thought (COT) reasoning process can significantly enhance their reasoning capabilities. However, we find that the fine-tuned LLMs suffer from an \\textit{Assessment Misalignment} problem, i.e., they frequently assign higher scores to subpar COTs, leading to potential limitations in their reasoning abilities. To address this problem, we introduce an \\textit{Alignment Fine-Tuning (AFT)} paradigm, which involves three steps: 1) fine-tuning LLMs with COT training data; 2) generating multiple COT responses for each question, and categorizing them into positive and negative ones based on whether they achieve the correct answer; 3) calibrating the scores of positive and negative responses given by LLMs with a novel constraint alignment loss. Specifically, the constraint alignment loss has two objectives: a) Alignment, which guarantees that positive scores surpass negative scores to encourage answers with high-quality COTs; b) Constraint, which keeps the negative scores confined to a reasonable range to prevent the model degradation. Beyond just the binary positive and negative feedback, the constraint alignment loss can be seamlessly adapted to the ranking situations when ranking feedback is accessible. Furthermore, we also delve deeply into recent ranking-based alignment methods, such as DPO, RRHF, and PRO, and discover that the constraint, which has been overlooked by these approaches, is also crucial for their performance. Extensive experiments on four reasoning benchmarks with both binary and ranking feedback demonstrate the effectiveness of AFT.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2309.02144v1",
+    "pdf_url": "https://arxiv.org/pdf/2309.02144v1.pdf",
+    "summary": "Reasoning is a cognitive process of using evidence to reach a sound conclusion. The reasoning capability is essential for large language models (LLMs) to serve as the brain of the artificial general intelligence agent."
+  },
+  {
+    "paper_id": "2312.05434v1",
+    "title": "Beneath the Surface: Unveiling Harmful Memes with Multimodal Reasoning Distilled from Large Language Models",
+    "abstract": "The age of social media is rife with memes. Understanding and detecting harmful memes pose a significant challenge due to their implicit meaning that is not explicitly conveyed through the surface text and image. However, existing harmful meme detection approaches only recognize superficial harm-indicative signals in an end-to-end classification manner but ignore in-depth cognition of the meme text and image. In this paper, we attempt to detect harmful memes based on advanced reasoning over the interplay of multimodal information in memes. Inspired by the success of Large Language Models (LLMs) on complex reasoning, we first conduct abductive reasoning with LLMs. Then we propose a novel generative framework to learn reasonable thoughts from LLMs for better multimodal fusion and lightweight fine-tuning, which consists of two training stages: 1) Distill multimodal reasoning knowledge from LLMs; and 2) Fine-tune the generative framework to infer harmfulness. Extensive experiments conducted on three meme datasets demonstrate that our proposed approach achieves superior performance than state-of-the-art methods on the harmful meme detection task.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2312.05434v1",
+    "pdf_url": "https://arxiv.org/pdf/2312.05434v1.pdf",
+    "summary": "The age of social media is rife with memes. Understanding and detecting harmful memes pose a significant challenge due to their implicit meaning that is not explicitly conveyed through the surface text and image."
+  },
+  {
+    "paper_id": "2407.08029v1",
+    "title": "A Critical Review of Causal Reasoning Benchmarks for Large Language Models",
+    "abstract": "Numerous benchmarks aim to evaluate the capabilities of Large Language Models (LLMs) for causal inference and reasoning. However, many of them can likely be solved through the retrieval of domain knowledge, questioning whether they achieve their purpose. In this review, we present a comprehensive overview of LLM benchmarks for causality. We highlight how recent benchmarks move towards a more thorough definition of causal reasoning by incorporating interventional or counterfactual reasoning. We derive a set of criteria that a useful benchmark or set of benchmarks should aim to satisfy. We hope this work will pave the way towards a general framework for the assessment of causal understanding in LLMs and the design of novel benchmarks.",
+    "published_year": "2024",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2407.08029v1",
+    "pdf_url": "https://arxiv.org/pdf/2407.08029v1.pdf",
+    "summary": "Numerous benchmarks aim to evaluate the capabilities of Large Language Models (LLMs) for causal inference and reasoning. However, many of them can likely be solved through the retrieval of domain knowledge, questioning whether they achieve their purpose."
+  },
+  {
+    "paper_id": "2310.00905v2",
+    "title": "All Languages Matter: On the Multilingual Safety of Large Language Models",
+    "abstract": "Safety lies at the core of developing and deploying large language models (LLMs). However, previous safety benchmarks only concern the safety in one language, e.g. the majority language in the pretraining data such as English. In this work, we build the first multilingual safety benchmark for LLMs, XSafety, in response to the global deployment of LLMs in practice. XSafety covers 14 kinds of commonly used safety issues across 10 languages that span several language families. We utilize XSafety to empirically study the multilingual safety for 4 widely-used LLMs, including both close-API and open-source models. Experimental results show that all LLMs produce significantly more unsafe responses for non-English queries than English ones, indicating the necessity of developing safety alignment for non-English languages. In addition, we propose several simple and effective prompting methods to improve the multilingual safety of ChatGPT by evoking safety knowledge and improving cross-lingual generalization of safety alignment. Our prompting method can significantly reduce the ratio of unsafe responses from 19.1% to 9.7% for non-English queries. We release our data at https://github.com/Jarviswang94/Multilingual_safety_benchmark.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2310.00905v2",
+    "pdf_url": "https://arxiv.org/pdf/2310.00905v2.pdf",
+    "summary": "Safety lies at the core of developing and deploying large language models (LLMs). However, previous safety benchmarks only concern the safety in one language, e.g."
+  },
+  {
+    "paper_id": "2512.06483v1",
+    "title": "Classifying German Language Proficiency Levels Using Large Language Models",
+    "abstract": "Assessing language proficiency is essential for education, as it enables instruction tailored to learners needs. This paper investigates the use of Large Language Models (LLMs) for automatically classifying German texts according to the Common European Framework of Reference for Languages (CEFR) into different proficiency levels. To support robust training and evaluation, we construct a diverse dataset by combining multiple existing CEFR-annotated corpora with synthetic data. We then evaluate prompt-engineering strategies, fine-tuning of a LLaMA-3-8B-Instruct model and a probing-based approach that utilizes the internal neural state of the LLM for classification. Our results show a consistent performance improvement over prior methods, highlighting the potential of LLMs for reliable and scalable CEFR classification.",
+    "published_year": "2025",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2512.06483v1",
+    "pdf_url": "https://arxiv.org/pdf/2512.06483v1.pdf",
+    "summary": "Assessing language proficiency is essential for education, as it enables instruction tailored to learners needs. This paper investigates the use of Large Language Models (LLMs) for automatically classifying German texts according to the Common European Framework of Reference for Languages (CEFR) into different proficiency levels."
+  },
+  {
+    "paper_id": "2306.13549v4",
+    "title": "A Survey on Multimodal Large Language Models",
+    "abstract": "Recently, Multimodal Large Language Model (MLLM) represented by GPT-4V has been a new rising research hotspot, which uses powerful Large Language Models (LLMs) as a brain to perform multimodal tasks. The surprising emergent capabilities of MLLM, such as writing stories based on images and OCR-free math reasoning, are rare in traditional multimodal methods, suggesting a potential path to artificial general intelligence. To this end, both academia and industry have endeavored to develop MLLMs that can compete with or even better than GPT-4V, pushing the limit of research at a surprising speed. In this paper, we aim to trace and summarize the recent progress of MLLMs. First of all, we present the basic formulation of MLLM and delineate its related concepts, including architecture, training strategy and data, as well as evaluation. Then, we introduce research topics about how MLLMs can be extended to support more granularity, modalities, languages, and scenarios. We continue with multimodal hallucination and extended techniques, including Multimodal ICL (M-ICL), Multimodal CoT (M-CoT), and LLM-Aided Visual Reasoning (LAVR). To conclude the paper, we discuss existing challenges and point out promising research directions. In light of the fact that the era of MLLM has only just begun, we will keep updating this survey and hope it can inspire more research. An associated GitHub link collecting the latest papers is available at https://github.com/BradyFU/Awesome-Multimodal-Large-Language-Models.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2306.13549v4",
+    "pdf_url": "https://arxiv.org/pdf/2306.13549v4.pdf",
+    "summary": "Recently, Multimodal Large Language Model (MLLM) represented by GPT-4V has been a new rising research hotspot, which uses powerful Large Language Models (LLMs) as a brain to perform multimodal tasks. The surprising emergent capabilities of MLLM, such as writing stories based on images and OCR-free math reasoning, are rare in traditional multimodal methods, suggesting a potential path to artificial general intelligence."
+  },
+  {
+    "paper_id": "2402.14800v2",
+    "title": "Not All Experts are Equal: Efficient Expert Pruning and Skipping for Mixture-of-Experts Large Language Models",
+    "abstract": "A pivotal advancement in the progress of large language models (LLMs) is the emergence of the Mixture-of-Experts (MoE) LLMs. Compared to traditional LLMs, MoE LLMs can achieve higher performance with fewer parameters, but it is still hard to deploy them due to their immense parameter sizes. Different from previous weight pruning methods that rely on specifically designed hardware, this paper mainly aims to enhance the deployment efficiency of MoE LLMs by introducing plug-and-play expert-level sparsification techniques. Specifically, we propose, for the first time to our best knowledge, post-training approaches for task-agnostic and task-specific expert pruning and skipping of MoE LLMs, tailored to improve deployment efficiency while maintaining model performance across a wide range of tasks. Extensive experiments show that our proposed methods can simultaneously reduce model sizes and increase the inference speed, while maintaining satisfactory performance. Data and code will be available at https://github.com/Lucky-Lance/Expert_Sparsity.",
+    "published_year": "2024",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2402.14800v2",
+    "pdf_url": "https://arxiv.org/pdf/2402.14800v2.pdf",
+    "summary": "A pivotal advancement in the progress of large language models (LLMs) is the emergence of the Mixture-of-Experts (MoE) LLMs. Compared to traditional LLMs, MoE LLMs can achieve higher performance with fewer parameters, but it is still hard to deploy them due to their immense parameter sizes."
+  },
+  {
+    "paper_id": "2404.16891v1",
+    "title": "Attacks on Third-Party APIs of Large Language Models",
+    "abstract": "Large language model (LLM) services have recently begun offering a plugin ecosystem to interact with third-party API services. This innovation enhances the capabilities of LLMs, but it also introduces risks, as these plugins developed by various third parties cannot be easily trusted. This paper proposes a new attacking framework to examine security and safety vulnerabilities within LLM platforms that incorporate third-party services. Applying our framework specifically to widely used LLMs, we identify real-world malicious attacks across various domains on third-party APIs that can imperceptibly modify LLM outputs. The paper discusses the unique challenges posed by third-party API integration and offers strategic possibilities to improve the security and safety of LLM ecosystems moving forward. Our code is released at https://github.com/vk0812/Third-Party-Attacks-on-LLMs.",
+    "published_year": "2024",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2404.16891v1",
+    "pdf_url": "https://arxiv.org/pdf/2404.16891v1.pdf",
+    "summary": "Large language model (LLM) services have recently begun offering a plugin ecosystem to interact with third-party API services. This innovation enhances the capabilities of LLMs, but it also introduces risks, as these plugins developed by various third parties cannot be easily trusted."
+  },
+  {
+    "paper_id": "2311.04589v3",
+    "title": "TEAL: Tokenize and Embed ALL for Multi-modal Large Language Models",
+    "abstract": "Despite Multi-modal Large Language Models (MM-LLMs) have made exciting strides recently, they are still struggling to efficiently model the interactions among multi-modal inputs and the generation in non-textual modalities. In this work, we propose TEAL (Tokenize and Embed ALl)}, an approach to treat the input from any modality as a token sequence and learn a joint embedding space for all modalities. Specifically, for the input from any modality, TEAL first discretizes it into a token sequence with the off-the-shelf tokenizer and embeds the token sequence into a joint embedding space with a learnable embedding matrix. MM-LLMs just need to predict the multi-modal tokens autoregressively as the textual LLMs do. Finally, the corresponding de-tokenizer is applied to generate the output in each modality based on the predicted token sequence. With the joint embedding space, TEAL enables the frozen LLMs to perform both understanding and generation tasks involving non-textual modalities, such as image and audio. Thus, the textual LLM can just work as an interface and maintain its high performance in textual understanding and generation. Experiments show that TEAL achieves substantial improvements in multi-modal understanding, and implements a simple scheme for multi-modal generations.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2311.04589v3",
+    "pdf_url": "https://arxiv.org/pdf/2311.04589v3.pdf",
+    "summary": "Despite Multi-modal Large Language Models (MM-LLMs) have made exciting strides recently, they are still struggling to efficiently model the interactions among multi-modal inputs and the generation in non-textual modalities. In this work, we propose TEAL (Tokenize and Embed ALl)}, an approach to treat the input from any modality as a token sequence and learn a joint embedding space for all modalities."
+  },
+  {
+    "paper_id": "2305.03715v1",
+    "title": "Large Language Models in Ambulatory Devices for Home Health Diagnostics: A case study of Sickle Cell Anemia Management",
+    "abstract": "This study investigates the potential of an ambulatory device that incorporates Large Language Models (LLMs) in cadence with other specialized ML models to assess anemia severity in sickle cell patients in real time. The device would rely on sensor data that measures angiogenic material levels to assess anemia severity, providing real-time information to patients and clinicians to reduce the frequency of vaso-occlusive crises because of the early detection of anemia severity, allowing for timely interventions and potentially reducing the likelihood of serious complications. The main challenges in developing such a device are the creation of a reliable non-invasive tool for angiogenic level assessment, a biophysics model and the practical consideration of an LLM communicating with emergency personnel on behalf of an incapacitated patient. A possible system is proposed, and the limitations of this approach are discussed.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2305.03715v1",
+    "pdf_url": "https://arxiv.org/pdf/2305.03715v1.pdf",
+    "summary": "This study investigates the potential of an ambulatory device that incorporates Large Language Models (LLMs) in cadence with other specialized ML models to assess anemia severity in sickle cell patients in real time. The device would rely on sensor data that measures angiogenic material levels to assess anemia severity, providing real-time information to patients and clinicians to reduce the frequency of vaso-occlusive crises because of the early detection of anemia severity, allowing for timely interventions and potentially reducing the likelihood of serious complications."
+  },
+  {
+    "paper_id": "2412.16117v1",
+    "title": "PruneVid: Visual Token Pruning for Efficient Video Large Language Models",
+    "abstract": "In this paper, we introduce PruneVid, a visual token pruning method designed to enhance the efficiency of multi-modal video understanding. Large Language Models (LLMs) have shown promising performance in video tasks due to their extended capabilities in comprehending visual modalities. However, the substantial redundancy in video data presents significant computational challenges for LLMs. To address this issue, we introduce a training-free method that 1) minimizes video redundancy by merging spatial-temporal tokens, and 2) leverages LLMs' reasoning capabilities to selectively prune visual features relevant to question tokens, enhancing model efficiency. We validate our method across multiple video benchmarks, which demonstrate that PruneVid can prune over 80% of tokens while maintaining competitive performance combined with different model networks. This highlights its superior effectiveness and efficiency compared to existing pruning methods. Code: https://github.com/Visual-AI/PruneVid.",
+    "published_year": "2024",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2412.16117v1",
+    "pdf_url": "https://arxiv.org/pdf/2412.16117v1.pdf",
+    "summary": "In this paper, we introduce PruneVid, a visual token pruning method designed to enhance the efficiency of multi-modal video understanding. Large Language Models (LLMs) have shown promising performance in video tasks due to their extended capabilities in comprehending visual modalities."
+  },
+  {
+    "paper_id": "2509.16679v1",
+    "title": "Reinforcement Learning Meets Large Language Models: A Survey of Advancements and Applications Across the LLM Lifecycle",
+    "abstract": "In recent years, training methods centered on Reinforcement Learning (RL) have markedly enhanced the reasoning and alignment performance of Large Language Models (LLMs), particularly in understanding human intents, following user instructions, and bolstering inferential strength. Although existing surveys offer overviews of RL augmented LLMs, their scope is often limited, failing to provide a comprehensive summary of how RL operates across the full lifecycle of LLMs. We systematically review the theoretical and practical advancements whereby RL empowers LLMs, especially Reinforcement Learning with Verifiable Rewards (RLVR). First, we briefly introduce the basic theory of RL. Second, we thoroughly detail application strategies for RL across various phases of the LLM lifecycle, including pre-training, alignment fine-tuning, and reinforced reasoning. In particular, we emphasize that RL methods in the reinforced reasoning phase serve as a pivotal driving force for advancing model reasoning to its limits. Next, we collate existing datasets and evaluation benchmarks currently used for RL fine-tuning, spanning human-annotated datasets, AI-assisted preference data, and program-verification-style corpora. Subsequently, we review the mainstream open-source tools and training frameworks available, providing clear practical references for subsequent research. Finally, we analyse the future challenges and trends in the field of RL-enhanced LLMs. This survey aims to present researchers and practitioners with the latest developments and frontier trends at the intersection of RL and LLMs, with the goal of fostering the evolution of LLMs that are more intelligent, generalizable, and secure.",
+    "published_year": "2025",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2509.16679v1",
+    "pdf_url": "https://arxiv.org/pdf/2509.16679v1.pdf",
+    "summary": "In recent years, training methods centered on Reinforcement Learning (RL) have markedly enhanced the reasoning and alignment performance of Large Language Models (LLMs), particularly in understanding human intents, following user instructions, and bolstering inferential strength. Although existing surveys offer overviews of RL augmented LLMs, their scope is often limited, failing to provide a comprehensive summary of how RL operates across the full lifecycle of LLMs."
+  },
+  {
+    "paper_id": "2305.14982v2",
+    "title": "LAraBench: Benchmarking Arabic AI with Large Language Models",
+    "abstract": "Recent advancements in Large Language Models (LLMs) have significantly influenced the landscape of language and speech research. Despite this progress, these models lack specific benchmarking against state-of-the-art (SOTA) models tailored to particular languages and tasks. LAraBench addresses this gap for Arabic Natural Language Processing (NLP) and Speech Processing tasks, including sequence tagging and content classification across different domains. We utilized models such as GPT-3.5-turbo, GPT-4, BLOOMZ, Jais-13b-chat, Whisper, and USM, employing zero and few-shot learning techniques to tackle 33 distinct tasks across 61 publicly available datasets. This involved 98 experimental setups, encompassing ~296K data points, ~46 hours of speech, and 30 sentences for Text-to-Speech (TTS). This effort resulted in 330+ sets of experiments. Our analysis focused on measuring the performance gap between SOTA models and LLMs. The overarching trend observed was that SOTA models generally outperformed LLMs in zero-shot learning, with a few exceptions. Notably, larger computational models with few-shot learning techniques managed to reduce these performance gaps. Our findings provide valuable insights into the applicability of LLMs for Arabic NLP and speech processing tasks.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2305.14982v2",
+    "pdf_url": "https://arxiv.org/pdf/2305.14982v2.pdf",
+    "summary": "Recent advancements in Large Language Models (LLMs) have significantly influenced the landscape of language and speech research. Despite this progress, these models lack specific benchmarking against state-of-the-art (SOTA) models tailored to particular languages and tasks."
+  },
+  {
+    "paper_id": "2403.09832v1",
+    "title": "Scaling Behavior of Machine Translation with Large Language Models under Prompt Injection Attacks",
+    "abstract": "Large Language Models (LLMs) are increasingly becoming the preferred foundation platforms for many Natural Language Processing tasks such as Machine Translation, owing to their quality often comparable to or better than task-specific models, and the simplicity of specifying the task through natural language instructions or in-context examples. Their generality, however, opens them up to subversion by end users who may embed into their requests instructions that cause the model to behave in unauthorized and possibly unsafe ways. In this work we study these Prompt Injection Attacks (PIAs) on multiple families of LLMs on a Machine Translation task, focusing on the effects of model size on the attack success rates. We introduce a new benchmark data set and we discover that on multiple language pairs and injected prompts written in English, larger models under certain conditions may become more susceptible to successful attacks, an instance of the Inverse Scaling phenomenon (McKenzie et al., 2023). To our knowledge, this is the first work to study non-trivial LLM scaling behaviour in a multi-lingual setting.",
+    "published_year": "2024",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2403.09832v1",
+    "pdf_url": "https://arxiv.org/pdf/2403.09832v1.pdf",
+    "summary": "Large Language Models (LLMs) are increasingly becoming the preferred foundation platforms for many Natural Language Processing tasks such as Machine Translation, owing to their quality often comparable to or better than task-specific models, and the simplicity of specifying the task through natural language instructions or in-context examples. Their generality, however, opens them up to subversion by end users who may embed into their requests instructions that cause the model to behave in unauthorized and possibly unsafe ways."
+  },
+  {
+    "paper_id": "2601.08844v1",
+    "title": "Emissions and Performance Trade-off Between Small and Large Language Models",
+    "abstract": "The advent of Large Language Models (LLMs) has raised concerns about their enormous carbon footprint, starting with energy-intensive training and continuing through repeated inference. This study investigates the potential of using fine-tuned Small Language Models (SLMs) as a sustainable alternative for predefined tasks. Here, we present a comparative analysis of the performance-emissions trade-off between LLMs and fine-tuned SLMs across selected tasks under Natural Language Processing, Reasoning and Programming. Our results show that in four out of the six selected tasks, SLMs maintained comparable performances for a significant reduction in carbon emissions during inference. Our findings demonstrate the viability of smaller models in mitigating the environmental impact of resource-heavy LLMs, thus advancing towards sustainable, green AI.",
+    "published_year": "2025",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2601.08844v1",
+    "pdf_url": "https://arxiv.org/pdf/2601.08844v1.pdf",
+    "summary": "The advent of Large Language Models (LLMs) has raised concerns about their enormous carbon footprint, starting with energy-intensive training and continuing through repeated inference. This study investigates the potential of using fine-tuned Small Language Models (SLMs) as a sustainable alternative for predefined tasks."
+  },
+  {
+    "paper_id": "2312.12141v4",
+    "title": "Neuron-Level Knowledge Attribution in Large Language Models",
+    "abstract": "Identifying important neurons for final predictions is essential for understanding the mechanisms of large language models. Due to computational constraints, current attribution techniques struggle to operate at neuron level. In this paper, we propose a static method for pinpointing significant neurons. Compared to seven other methods, our approach demonstrates superior performance across three metrics. Additionally, since most static methods typically only identify \"value neurons\" directly contributing to the final prediction, we propose a method for identifying \"query neurons\" which activate these \"value neurons\". Finally, we apply our methods to analyze six types of knowledge across both attention and feed-forward network (FFN) layers. Our method and analysis are helpful for understanding the mechanisms of knowledge storage and set the stage for future research in knowledge editing. The code is available on https://github.com/zepingyu0512/neuron-attribution.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2312.12141v4",
+    "pdf_url": "https://arxiv.org/pdf/2312.12141v4.pdf",
+    "summary": "Identifying important neurons for final predictions is essential for understanding the mechanisms of large language models. Due to computational constraints, current attribution techniques struggle to operate at neuron level."
+  },
+  {
+    "paper_id": "2503.21676v2",
+    "title": "How do language models learn facts? Dynamics, curricula and hallucinations",
+    "abstract": "Large language models accumulate vast knowledge during pre-training, yet the dynamics governing this acquisition remain poorly understood. This work investigates the learning dynamics of language models on a synthetic factual recall task, uncovering three key findings: First, language models learn in three phases, exhibiting a performance plateau before acquiring precise factual knowledge. Mechanistically, this plateau coincides with the formation of attention-based circuits that support recall. Second, the training data distribution significantly impacts learning dynamics, as imbalanced distributions lead to shorter plateaus. Finally, hallucinations emerge simultaneously with knowledge, and integrating new knowledge into the model through fine-tuning is challenging, as it quickly corrupts its existing parametric memories. Our results emphasize the importance of data distribution in knowledge acquisition and suggest novel data scheduling strategies to accelerate neural network training.",
+    "published_year": "2025",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2503.21676v2",
+    "pdf_url": "https://arxiv.org/pdf/2503.21676v2.pdf",
+    "summary": "Large language models accumulate vast knowledge during pre-training, yet the dynamics governing this acquisition remain poorly understood. This work investigates the learning dynamics of language models on a synthetic factual recall task, uncovering three key findings: First, language models learn in three phases, exhibiting a performance plateau before acquiring precise factual knowledge."
+  },
+  {
+    "paper_id": "2409.15256v1",
+    "title": "Behavioral Bias of Vision-Language Models: A Behavioral Finance View",
+    "abstract": "Large Vision-Language Models (LVLMs) evolve rapidly as Large Language Models (LLMs) was equipped with vision modules to create more human-like models. However, we should carefully evaluate their applications in different domains, as they may possess undesired biases. Our work studies the potential behavioral biases of LVLMs from a behavioral finance perspective, an interdisciplinary subject that jointly considers finance and psychology. We propose an end-to-end framework, from data collection to new evaluation metrics, to assess LVLMs' reasoning capabilities and the dynamic behaviors manifested in two established human financial behavioral biases: recency bias and authority bias. Our evaluations find that recent open-source LVLMs such as LLaVA-NeXT, MobileVLM-V2, Mini-Gemini, MiniCPM-Llama3-V 2.5 and Phi-3-vision-128k suffer significantly from these two biases, while the proprietary model GPT-4o is negligibly impacted. Our observations highlight directions in which open-source models can improve. The code is available at https://github.com/mydcxiao/vlm_behavioral_fin.",
+    "published_year": "2024",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2409.15256v1",
+    "pdf_url": "https://arxiv.org/pdf/2409.15256v1.pdf",
+    "summary": "Large Vision-Language Models (LVLMs) evolve rapidly as Large Language Models (LLMs) was equipped with vision modules to create more human-like models. However, we should carefully evaluate their applications in different domains, as they may possess undesired biases."
+  },
+  {
+    "paper_id": "2312.12006v1",
+    "title": "Can ChatGPT be Your Personal Medical Assistant?",
+    "abstract": "The advanced large language model (LLM) ChatGPT has shown its potential in different domains and remains unbeaten due to its characteristics compared to other LLMs. This study aims to evaluate the potential of using a fine-tuned ChatGPT model as a personal medical assistant in the Arabic language. To do so, this study uses publicly available online questions and answering datasets in Arabic language. There are almost 430K questions and answers for 20 disease-specific categories. GPT-3.5-turbo model was fine-tuned with a portion of this dataset. The performance of this fine-tuned model was evaluated through automated and human evaluation. The automated evaluations include perplexity, coherence, similarity, and token count. Native Arabic speakers with medical knowledge evaluated the generated text by calculating relevance, accuracy, precision, logic, and originality. The overall result shows that ChatGPT has a bright future in medical assistance.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2312.12006v1",
+    "pdf_url": "https://arxiv.org/pdf/2312.12006v1.pdf",
+    "summary": "The advanced large language model (LLM) ChatGPT has shown its potential in different domains and remains unbeaten due to its characteristics compared to other LLMs. This study aims to evaluate the potential of using a fine-tuned ChatGPT model as a personal medical assistant in the Arabic language."
+  },
+  {
+    "paper_id": "2507.12472v1",
+    "title": "A Survey of AIOps in the Era of Large Language Models",
+    "abstract": "As large language models (LLMs) grow increasingly sophisticated and pervasive, their application to various Artificial Intelligence for IT Operations (AIOps) tasks has garnered significant attention. However, a comprehensive understanding of the impact, potential, and limitations of LLMs in AIOps remains in its infancy. To address this gap, we conducted a detailed survey of LLM4AIOps, focusing on how LLMs can optimize processes and improve outcomes in this domain. We analyzed 183 research papers published between January 2020 and December 2024 to answer four key research questions (RQs). In RQ1, we examine the diverse failure data sources utilized, including advanced LLM-based processing techniques for legacy data and the incorporation of new data sources enabled by LLMs. RQ2 explores the evolution of AIOps tasks, highlighting the emergence of novel tasks and the publication trends across these tasks. RQ3 investigates the various LLM-based methods applied to address AIOps challenges. Finally, RQ4 reviews evaluation methodologies tailored to assess LLM-integrated AIOps approaches. Based on our findings, we discuss the state-of-the-art advancements and trends, identify gaps in existing research, and propose promising directions for future exploration.",
+    "published_year": "2025",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2507.12472v1",
+    "pdf_url": "https://arxiv.org/pdf/2507.12472v1.pdf",
+    "summary": "As large language models (LLMs) grow increasingly sophisticated and pervasive, their application to various Artificial Intelligence for IT Operations (AIOps) tasks has garnered significant attention. However, a comprehensive understanding of the impact, potential, and limitations of LLMs in AIOps remains in its infancy."
+  },
+  {
+    "paper_id": "2309.01446v4",
+    "title": "Open Sesame! Universal Black Box Jailbreaking of Large Language Models",
+    "abstract": "Large language models (LLMs), designed to provide helpful and safe responses, often rely on alignment techniques to align with user intent and social guidelines. Unfortunately, this alignment can be exploited by malicious actors seeking to manipulate an LLM's outputs for unintended purposes. In this paper we introduce a novel approach that employs a genetic algorithm (GA) to manipulate LLMs when model architecture and parameters are inaccessible. The GA attack works by optimizing a universal adversarial prompt that -- when combined with a user's query -- disrupts the attacked model's alignment, resulting in unintended and potentially harmful outputs. Our novel approach systematically reveals a model's limitations and vulnerabilities by uncovering instances where its responses deviate from expected behavior. Through extensive experiments we demonstrate the efficacy of our technique, thus contributing to the ongoing discussion on responsible AI development by providing a diagnostic tool for evaluating and enhancing alignment of LLMs with human intent. To our knowledge this is the first automated universal black box jailbreak attack.",
+    "published_year": "2023",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2309.01446v4",
+    "pdf_url": "https://arxiv.org/pdf/2309.01446v4.pdf",
+    "summary": "Large language models (LLMs), designed to provide helpful and safe responses, often rely on alignment techniques to align with user intent and social guidelines. Unfortunately, this alignment can be exploited by malicious actors seeking to manipulate an LLM's outputs for unintended purposes."
+  },
+  {
+    "paper_id": "2508.04848v1",
+    "title": "Large Language Models Reasoning Abilities Under Non-Ideal Conditions After RL-Fine-Tuning",
+    "abstract": "Reinforcement learning (RL) has become a key technique for enhancing the reasoning abilities of large language models (LLMs), with policy-gradient algorithms dominating the post-training stage because of their efficiency and effectiveness. However, most existing benchmarks evaluate large-language-model reasoning under idealized settings, overlooking performance in realistic, non-ideal scenarios. We identify three representative non-ideal scenarios with practical relevance: summary inference, fine-grained noise suppression, and contextual filtering. We introduce a new research direction guided by brain-science findings that human reasoning remains reliable under imperfect inputs. We formally define and evaluate these challenging scenarios. We fine-tune three LLMs and a state-of-the-art large vision-language model (LVLM) using RL with a representative policy-gradient algorithm and then test their performance on eight public datasets. Our results reveal that while RL fine-tuning improves baseline reasoning under idealized settings, performance declines significantly across all three non-ideal scenarios, exposing critical limitations in advanced reasoning capabilities. Although we propose a scenario-specific remediation method, our results suggest current methods leave these reasoning deficits largely unresolved. This work highlights that the reasoning abilities of large models are often overstated and underscores the importance of evaluating models under non-ideal scenarios. The code and data will be released at XXXX.",
+    "published_year": "2025",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2508.04848v1",
+    "pdf_url": "https://arxiv.org/pdf/2508.04848v1.pdf",
+    "summary": "Reinforcement learning (RL) has become a key technique for enhancing the reasoning abilities of large language models (LLMs), with policy-gradient algorithms dominating the post-training stage because of their efficiency and effectiveness. However, most existing benchmarks evaluate large-language-model reasoning under idealized settings, overlooking performance in realistic, non-ideal scenarios."
+  },
+  {
+    "paper_id": "2402.12065v2",
+    "title": "WKVQuant: Quantizing Weight and Key/Value Cache for Large Language Models Gains More",
+    "abstract": "Large Language Models (LLMs) face significant deployment challenges due to their substantial memory requirements and the computational demands of auto-regressive text generation process. This paper addresses these challenges by focusing on the quantization of LLMs, a technique that reduces memory consumption by converting model parameters and activations into low-bit integers. We critically analyze the existing quantization approaches, identifying their limitations in balancing the accuracy and efficiency of the quantized LLMs. To advance beyond these limitations, we propose WKVQuant, a PTQ framework especially designed for quantizing weights and the key/value (KV) cache of LLMs. Specifically, we incorporates past-only quantization to improve the computation of attention. Additionally, we introduce two-dimensional quantization strategy to handle the distribution of KV cache, along with a cross-block reconstruction regularization for parameter optimization. Experiments show that WKVQuant achieves almost comparable memory savings to weight-activation quantization, while also approaching the performance of weight-only quantization.",
+    "published_year": "2024",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2402.12065v2",
+    "pdf_url": "https://arxiv.org/pdf/2402.12065v2.pdf",
+    "summary": "AI Analysis: The primary problem addressed is the significant deployment challenge of Large Language Models (LLMs) due to their substantial memory requirements and computational demands, which existing quantization approaches struggle to balance for accuracy and efficiency. The core technical contribution is WKVQuant, a novel Post-Training Quantization (PTQ) framework specifically designed for LLM weights and the Key/Value (KV) cache, incorporating past-only attention quantization, a two-dimensional KV cache strategy, and cross-block reconstruction regularization. WKVQuant achieves memory savings comparable to weight-activation quantization while approaching the performance of weight-only quantization, offering a significant improvement in efficient LLM deployment."
+  },
+  {
+    "paper_id": "2406.16167v1",
+    "title": "FS-RAG: A Frame Semantics Based Approach for Improved Factual Accuracy in Large Language Models",
+    "abstract": "We present a novel extension to Retrieval Augmented Generation with the goal of mitigating factual inaccuracies in the output of large language models. Specifically, our method draws on the cognitive linguistic theory of frame semantics for the indexing and retrieval of factual information relevant to helping large language models answer queries. We conduct experiments to demonstrate the effectiveness of this method both in terms of retrieval effectiveness and in terms of the relevance of the frames and frame relations automatically generated. Our results show that this novel mechanism of Frame Semantic-based retrieval, designed to improve Retrieval Augmented Generation (FS-RAG), is effective and offers potential for providing data-driven insights into frame semantics theory. We provide open access to our program code and prompts.",
+    "published_year": "2024",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2406.16167v1",
+    "pdf_url": "https://arxiv.org/pdf/2406.16167v1.pdf",
+    "summary": "AI Analysis: This research addresses factual inaccuracies in large language model outputs by introducing FS-RAG, a novel Retrieval Augmented Generation extension. It leverages cognitive linguistic frame semantics for indexing and retrieving relevant factual information. The method demonstrates effectiveness in retrieval and relevance, while also offering potential for data-driven insights into frame semantics theory."
+  },
+  {
+    "paper_id": "2512.12447v1",
+    "title": "Large language models have learned to use language",
+    "abstract": "Acknowledging that large language models have learned to use language can open doors to breakthrough language science. Achieving these breakthroughs may require abandoning some long-held ideas about how language knowledge is evaluated and reckoning with the difficult fact that we have entered a post-Turing test era.",
+    "published_year": "2025",
+    "source": "arxiv",
+    "arxiv_url": "https://arxiv.org/abs/2512.12447v1",
+    "pdf_url": "https://arxiv.org/pdf/2512.12447v1.pdf",
+    "summary": "Acknowledging that large language models have learned to use language can open doors to breakthrough language science. Achieving these breakthroughs may require abandoning some long-held ideas about how language knowledge is evaluated and reckoning with the difficult fact that we have entered a post-Turing test era.."
   }
 ]

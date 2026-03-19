@@ -1,4 +1,4 @@
-import { FileText, Calendar, ExternalLink, FileDown, Users, Tag, HelpCircle } from 'lucide-react';
+import { FileText, Calendar, ExternalLink, FileDown, Users, Tag, HelpCircle, Activity } from 'lucide-react';
 
 export default function PaperList({ papers, loading, mode = 'deep dive', emptyMessage = 'No papers found.' }) {
   if (loading) {
@@ -48,9 +48,9 @@ export default function PaperList({ papers, loading, mode = 'deep dive', emptyMe
             {paperTitle}
           </h3>
           {paperScore > 0 && (
-            <div className="flex-shrink-0 bg-indigo-50 text-indigo-700 text-xs font-bold px-2 py-1 rounded-md flex items-center gap-1" title="Relevance Score">
-              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon></svg>
-              {paperScore}
+            <div className="flex-shrink-0 bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5" title="Relevance Score">
+              <Activity size={12} />
+              {Math.round(paperScore)}
             </div>
           )}
         </div>

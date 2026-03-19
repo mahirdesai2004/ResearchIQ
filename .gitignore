@@ -16,5 +16,16 @@ __pycache__/
 .idea/
 .vscode/
 
-# Ignore local datasets if needed
-# backend/data/papers.json
+# Database files (auto-generated)
+*.db
+
+# Temp logs
+backend_output.txt
+frontend_output.txt
+
+# Node
+node_modules/
+dist/
+
+# OS
+.DS_Store

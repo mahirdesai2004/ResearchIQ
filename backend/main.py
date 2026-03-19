@@ -1,27 +1,29 @@
-from fastapi import FastAPI, Query, HTTPException, Depends
-from fastapi.responses import StreamingResponse
-from fastapi.middleware.cors import CORSMiddleware
-from sqlalchemy.orm import Session
-from sqlalchemy import func
-from pydantic import BaseModel
+# pyre-ignore-all-errors
+from fastapi import FastAPI, Query, HTTPException, Depends # pyre-ignore
+from fastapi.responses import StreamingResponse # pyre-ignore
+from fastapi.middleware.cors import CORSMiddleware # pyre-ignore
+from sqlalchemy.orm import Session # pyre-ignore
+from sqlalchemy import func # pyre-ignore
+from pydantic import BaseModel # pyre-ignore
 import logging
 import threading
 from datetime import datetime
 from typing import List, Optional, Dict, Any, Tuple
 from collections import defaultdict
 
-from database import engine, SessionLocal, Base, PaperModel, get_db
-from arxiv_ingest import ingest_by_year
-from ranking import score_and_filter
-from query_parser import parse_query
-from analytics import find_gaps
-from llm_layer import (
+from database import engine, SessionLocal, Base, PaperModel, get_db # pyre-ignore
+from arxiv_ingest import ingest_by_year # pyre-ignore
+from ranking import score_and_filter, compute_term_frequencies # pyre-ignore
+from query_parser import parse_query # pyre-ignore
+from analytics import find_gaps # pyre-ignore
+from llm_layer import ( # pyre-ignore
     llm_filter_irrelevant, 
     llm_rerank, 
     quick_summary, 
     literature_review_llm, 
     explain_trend_llm, 
-    why_this_paper
+    why_this_paper,
+    llm_interpret_query
 )
 
 # Initialize DB tables
@@ -123,17 +125,22 @@ def diversify(papers: list, num: int) -> list:
 
 @app.post("/research/query")
 def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
-    parsed = parse_query(req.topic)
+    # 🔥 LLM QUERY UNDERSTANDING: interpret raw query before parsing
+    interpreted_query = llm_interpret_query(req.topic)
+    parsed = parse_query(interpreted_query)
     
     all_papers = db.query(PaperModel).all()
-    scored = score_and_filter(all_papers, parsed)
+    # GLOBAL FREQUENCY (computed on-demand for simplicity in small datasets)
+    term_freq = compute_term_frequencies(all_papers)
+    scored = score_and_filter(all_papers, parsed, term_freq)
     
     # Base ranked extraction
     ranked_paper_objects = [p for p, _, _ in scored]
     paper_metadata = {id(p): {"score": s, "matched": m} for p, s, m in scored}
     
     print("\n=== QUERY DEBUG ===")
-    print("Query:", req.topic)
+    print("Raw Query:", req.topic)
+    print("Interpreted:", interpreted_query)
     print("Parsed Terms:", parsed)
 
     for p, score, matched in scored[:10]:
@@ -161,7 +168,7 @@ def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
     reranked = llm_rerank(req.topic, candidates)
     
     # Merge carefully to avoid duplicating the reranked objects
-    final_ranked = list(reranked)
+    final_ranked: List[Any] = list(reranked)
     reranked_ids = {p.id for p in reranked}
     for p in ranked_paper_objects:
         if p.id not in reranked_ids:
@@ -194,7 +201,11 @@ def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
         # 🔥 LLM WHY Badge (Optional integration)
         why = why_this_paper(req.topic, p)
         
-        kw_list = list(meta.get("matched", []))
+        # Only show important matches for display
+        matched = meta.get("matched", [])
+        matched_display = [t for t in matched if parsed.get(t, 0) >= 5]
+        
+        kw_list = list(matched_display)
         if why and why != "Relevant based on keywords.":
             kw_list.append(f"LLM insight: {why}")
             
@@ -222,7 +233,7 @@ def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
 @app.get("/analytics/keyword-trend")
 def keyword_trend(keyword: str):
     db: Session = SessionLocal()
-    data = defaultdict(int)
+    data: Dict[int, int] = defaultdict(int)
 
     papers = db.query(PaperModel).all()
 
@@ -312,7 +323,7 @@ def literature_review(domain: str = Query(...), db: Session = Depends(get_db)):
 @app.get("/analytics/trend-explanation")
 def trend_explanation(keyword: str = Query(...), db: Session = Depends(get_db)):
     db_session: Session = SessionLocal()
-    data = defaultdict(int)
+    data: Dict[int, int] = defaultdict(int)
 
     papers = db_session.query(PaperModel).all()
     for p in papers:
@@ -326,11 +337,12 @@ def trend_explanation(keyword: str = Query(...), db: Session = Depends(get_db)):
     if len(data) < 3:
         return {"keyword": keyword, "spike_year": None, "explanation": "Not enough data to explain trend for this topic."}
          
-    spike_year = max(data.keys(), key=lambda y: data[y])
+    spike_year = max(list(data.keys()), key=lambda y: data[y])
     
     parsed = parse_query(keyword)
     all_papers = db.query(PaperModel).filter(PaperModel.year == spike_year).all()
-    scored = score_and_filter(all_papers, parsed)
+    term_freq = compute_term_frequencies(all_papers)
+    scored = score_and_filter(all_papers, parsed, term_freq)
     
     top_matched = [x[0] for x in scored[:10]]
     
@@ -347,7 +359,8 @@ def trend_explanation(keyword: str = Query(...), db: Session = Depends(get_db)):
 def gap_detection(domain: str = Query(...), db: Session = Depends(get_db)):
     parsed = parse_query(domain)
     all_papers = db.query(PaperModel).all()
-    scored = score_and_filter(all_papers, parsed)
+    term_freq = compute_term_frequencies(all_papers)
+    scored = score_and_filter(all_papers, parsed, term_freq)
     
     top_papers = [x[0] for x in scored[:100]]
     gaps = find_gaps(top_papers)
@@ -356,7 +369,7 @@ def gap_detection(domain: str = Query(...), db: Session = Depends(get_db)):
     all_kws = []
     for p in top_papers:
         if p.keywords:
-            all_kws.extend([k.lower() for k in p.keywords if len(k) > 3])
+            all_kws.extend([str(k).lower() for k in p.keywords if len(str(k)) > 3])
     counts = Counter(all_kws)
         
     return {
