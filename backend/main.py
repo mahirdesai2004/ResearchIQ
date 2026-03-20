@@ -23,8 +23,10 @@ from llm_layer import ( # pyre-ignore
     literature_review_llm, 
     explain_trend_llm, 
     why_this_paper,
-    llm_interpret_query
+    parse_query_llm
 )
+from ranking import strict_filter, score_and_filter, compute_term_frequencies # pyre-ignore
+from embeddings import build_index, semantic_search # pyre-ignore
 
 # Initialize DB tables
 Base.metadata.create_all(bind=engine)
@@ -125,110 +127,98 @@ def diversify(papers: list, num: int) -> list:
 
 @app.post("/research/query")
 def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
-    # 🔥 LLM QUERY UNDERSTANDING: interpret raw query before parsing
-    interpreted_query = llm_interpret_query(req.topic)
-    parsed = parse_query(interpreted_query)
-    
+    # 1. LLM Query Parser
+    parsed = parse_query_llm(req.topic)
     all_papers = db.query(PaperModel).all()
-    # GLOBAL FREQUENCY (computed on-demand for simplicity in small datasets)
-    term_freq = compute_term_frequencies(all_papers)
-    scored = score_and_filter(all_papers, parsed, term_freq)
     
-    # Base ranked extraction
-    ranked_paper_objects = [p for p, _, _ in scored]
-    paper_metadata = {id(p): {"score": s, "matched": m} for p, s, m in scored}
+    # 2. Strict Filtering
+    candidates = strict_filter(all_papers, parsed)
     
-    print("\n=== QUERY DEBUG ===")
-    print("Raw Query:", req.topic)
-    print("Interpreted:", interpreted_query)
-    print("Parsed Terms:", parsed)
+    if not candidates:
+        print("⚠️ FILTER TOO STRICT → FALLBACK TRIGGERED")
+        candidates = all_papers[:20]
 
-    for p, score, matched in scored[:10]:
-        title_str = p.title or ""
-        print("TITLE:", title_str[:80])
-        print("MATCHED:", matched)
-        print("SCORE:", score)
-        print("---")
-        
-    if len(ranked_paper_objects) == 0:
+    print("QUERY:", req.topic)
+    print("PARSED:", parsed)
+    print("TOTAL PAPERS:", len(all_papers))
+    print("AFTER FILTER:", len(candidates))
+    
+    if len(candidates) == 0:
         return {
             "topic": req.topic, 
             "purpose": req.purpose, 
             "count": 0, 
             "papers": [],
-            "summary": "No relevant papers found matching your query."
+            "summary": "No relevant papers found matching your strict criteria.",
+            "status": "complete"
         }
-    
-    # 🔥 LLM LAYER
-    # Filter only applied to top results (top 20) inside the llm function to avoid massive costs
-    filtered = llm_filter_irrelevant(req.topic, ranked_paper_objects)
-    
-    # Rerank on top of the filtered safe stack
-    candidates = filtered if filtered else ranked_paper_objects
-    reranked = llm_rerank(req.topic, candidates)
-    
-    # Merge carefully to avoid duplicating the reranked objects
-    final_ranked: List[Any] = list(reranked)
-    reranked_ids = {p.id for p in reranked}
-    for p in ranked_paper_objects:
-        if p.id not in reranked_ids:
-            final_ranked.append(p)
-    
-    # Purpose Logic
-    summary_text = None
-    if req.purpose == "quick overview":
-        final = final_ranked[:5]
-        summary_text = quick_summary(req.topic, final)
-    elif req.purpose == "deep dive":
-        final = final_ranked[:req.num_papers]
-    elif req.purpose == "literature review":
-        final = diversify(final_ranked, req.num_papers)
-        # Note: literature_review_llm returns dict. The frontend currently puts 'summary' and 'open_questions' directly from the /analytics/literature-review endpoint
-        # For /research/query, they just ask for 'summary', but we'll return the string version if it asks for string.
-        # Actually, literature_review outputs a structured dict. I will serialize it to text or provide it as a dict. 
-        # I'll let literature_review_llm be formatted nicely in summary field.
-        rev = literature_review_llm(req.topic, final)
-        summary_text = rev.get("summary", "Summary not generated.")
-        # if frontend expects dict on query page, we will just send it in summary string
-        # Actually user prompt: 'summary = literature_review(request.topic, selected)'. so just assign it.
-    else:
-        final = final_ranked[:req.num_papers]
         
+    # 3. FAISS Semantic Search
+    index, _ = build_index(candidates)
+    semantic_results = semantic_search(req.topic, candidates, index)
+    
+    # 4. LLM Reranking
+    final_ranked = llm_rerank(req.topic, semantic_results)
+    
+    print("=== FINAL PAPERS ===", [p.title for p in final_ranked])
+
+    # Build response papers
     response_papers = []
-    for p in final:
-        meta = paper_metadata.get(id(p), {"score": 0, "matched": []})
+    core_terms = parsed.get("core_terms", [])
+    
+    for p in final_ranked[:req.num_papers]:
+        # Compute confidence score
+        text = ((p.title or "") + " " + (p.abstract or "")).lower()
+        core_matches = sum(1 for t in core_terms if t in text)
+        total_core = len(core_terms) if core_terms else 1
+        confidence = int((core_matches / total_core) * 100)
         
-        # 🔥 LLM WHY Badge (Optional integration)
-        why = why_this_paper(req.topic, p)
+        matched_keywords = [t for t in core_terms if t in text]
         
-        # Only show important matches for display
-        matched = meta.get("matched", [])
-        matched_display = [t for t in matched if parsed.get(t, 0) >= 5]
-        
-        kw_list = list(matched_display)
-        if why and why != "Relevant based on keywords.":
-            kw_list.append(f"LLM insight: {why}")
-            
         response_papers.append({
             "title": p.title,
             "year": p.year,
             "authors": p.authors,
             "abstract": p.abstract,
-            "matched_keywords": kw_list,
-            "score": meta.get("score", 0),
+            "matched_keywords": matched_keywords,
+            "score": confidence,
             "id": p.id,
-            "llm_reason": why
+            "llm_reason": f"Core term match: {', '.join(matched_keywords)}"
         })
         
-    response_data: dict[str, Any] = {
+    return {
         "topic": req.topic, 
         "purpose": req.purpose, 
         "count": len(response_papers), 
         "papers": response_papers,
-        "summary": summary_text
+        "summary": None,
+        "status": "processing",
+        "parsed_query": parsed
     }
+
+class AnalysisRequest(BaseModel):
+    topic: str
+    purpose: str
+    paper_ids: List[str]
+
+@app.post("/analytics/analysis")
+def generate_analysis(req: AnalysisRequest, db: Session = Depends(get_db)):
+    papers = db.query(PaperModel).filter(PaperModel.id.in_(req.paper_ids)).all()
     
-    return response_data
+    papers_dict = {p.id: p for p in papers}
+    ordered_papers = [papers_dict[pid] for pid in req.paper_ids if pid in papers_dict]
+    
+    summary_text = None
+    if req.purpose == "quick overview":
+        summary_text = quick_summary(req.topic, ordered_papers[:5])
+    elif req.purpose == "literature review":
+        rev = literature_review_llm(req.topic, ordered_papers[:10])
+        summary_text = rev.get("summary", "Summary not generated.")
+        
+    return {
+        "summary": summary_text,
+        "status": "complete"
+    }
 
 @app.get("/analytics/keyword-trend")
 def keyword_trend(keyword: str):
@@ -266,9 +256,11 @@ def export_data():
             "authors": ", ".join(p.authors or []),
             "keywords": ", ".join(p.keywords or []),
             "domain": ", ".join(p.domains or []),
+            "source": getattr(p, "source", "arxiv"),
+            "score": getattr(p, "score", 0),
             "abstract": p.abstract
         }
-        for p in papers
+        for p in papers if p.year and p.year >= 2015
     ]
 
 @app.get("/export/tableau-aggregates")

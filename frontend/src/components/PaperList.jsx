@@ -48,9 +48,9 @@ export default function PaperList({ papers, loading, mode = 'deep dive', emptyMe
             {paperTitle}
           </h3>
           {paperScore > 0 && (
-            <div className="flex-shrink-0 bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5" title="Relevance Score">
+            <div className="flex-shrink-0 bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5" title="Confidence Score">
               <Activity size={12} />
-              {Math.round(paperScore)}
+              {Math.round(paperScore)}% Match
             </div>
           )}
         </div>
@@ -77,6 +77,11 @@ export default function PaperList({ papers, loading, mode = 'deep dive', emptyMe
                 </span>
               ))}
             </div>
+            {paper.llm_reason && (
+              <p className="mt-2 text-xs text-emerald-800 italic leading-relaxed">
+                {paper.llm_reason}
+              </p>
+            )}
           </div>
         )}
 

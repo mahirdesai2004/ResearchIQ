@@ -6,3 +6,5 @@ python-multipart==0.0.9
 python-dotenv==1.0.1
 google-genai==0.3.0
 pydantic==2.6.4
+sentence-transformers==2.7.0
+faiss-cpu==1.8.0

@@ -8,7 +8,8 @@ import {
   getKeywordTrend, 
   getLiteratureReview, 
   getTrendExplanation, 
-  getGapDetection 
+  getGapDetection,
+  getAnalysis
 } from '../services/api';
 import { 
   Activity, 
@@ -32,6 +33,9 @@ export default function ResultsPage() {
   const [loadingTrend, setLoadingTrend] = useState(true);
   
   // Dashboard Intelligence State
+  const [analysisSummary, setAnalysisSummary] = useState(null);
+  const [analyzingSummary, setAnalyzingSummary] = useState(false);
+  
   const [reviewData, setReviewData] = useState(null);
   const [loadingReview, setLoadingReview] = useState(true);
   
@@ -68,6 +72,7 @@ export default function ResultsPage() {
       setTrendExplanation(null);
       
       // 1. Fetch main papers via /research/query
+      let fetchedPapers = [];
       try {
         const res = await researchQuery({
           topic: query,
@@ -75,8 +80,29 @@ export default function ResultsPage() {
           num_papers: numPapers,
         });
         
-        setPapers(res.papers || []);
+        fetchedPapers = res.papers || [];
+        setPapers(fetchedPapers);
         setTotalCount(res.count || 0);
+        
+        // Step 2 of Async: If we have papers, start deep analysis
+        if (fetchedPapers.length > 0) {
+          setAnalyzingSummary(true);
+          const pIds = fetchedPapers.slice(0, 10).map(p => p.id);
+          // Wait 1 second mostly for UX smoothness then fire the heavyweight LLM analysis
+          setTimeout(() => {
+            getAnalysis(query, purpose, pIds)
+              .then(analysisRes => {
+                setAnalysisSummary(analysisRes.summary);
+              })
+              .catch(err => {
+                console.error("Analysis summary failed:", err);
+                setAnalysisSummary("Analysis could not be generated.");
+              })
+              .finally(() => setAnalyzingSummary(false));
+          }, 1000);
+        } else {
+          setAnalysisSummary(null);
+        }
       } catch (err) {
         console.error("Error fetching research query:", err);
       } finally {
@@ -246,62 +272,34 @@ export default function ResultsPage() {
           {/* Left Column (8 cols): Literature Review & Top Papers */}
           <div className="lg:col-span-8 space-y-8">
             
-            {/* SECTION 1: Literature Review */}
-            <div className="bg-white border border-gray-200 rounded-2xl p-6 shadow-sm">
-              <div className="flex items-center gap-2 mb-6 border-b border-gray-100 pb-4">
-                <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-                  <BookOpen size={20} />
+            {/* SECTION 1: LLM Executive Summary */}
+            {analyzingSummary || analysisSummary ? (
+              <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-100 rounded-2xl p-6 shadow-sm mb-8">
+                <div className="flex items-center gap-2 mb-4">
+                  <div className="p-2 bg-blue-600 rounded-lg text-white shadow-sm">
+                    <Activity size={20} className={analyzingSummary ? "animate-spin" : ""} />
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-800">
+                    {analyzingSummary ? "Analyzing research trends..." : "Executive Summary"}
+                  </h2>
                 </div>
-                <h2 className="text-xl font-bold text-slate-800">Literature Review</h2>
+                {analyzingSummary ? (
+                  <div className="space-y-3 animate-pulse">
+                    <div className="h-4 bg-blue-200/50 rounded w-full"></div>
+                    <div className="h-4 bg-blue-200/50 rounded w-5/6"></div>
+                    <div className="h-4 bg-blue-200/50 rounded w-3/4"></div>
+                  </div>
+                ) : (
+                  <p className="text-slate-700 leading-relaxed font-medium">
+                    {analysisSummary}
+                  </p>
+                )}
               </div>
-              
-              {loadingReview ? (
-                <div className="space-y-4 animate-pulse">
-                  <div className="h-4 bg-slate-200 rounded w-3/4"></div>
-                  <div className="h-4 bg-slate-200 rounded w-full"></div>
-                  <div className="h-4 bg-slate-200 rounded w-5/6"></div>
-                </div>
-              ) : reviewData ? (
-                <div className="space-y-6">
-                  <div>
-                    <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-2">Summary</h3>
-                    <p className="text-slate-700 leading-relaxed">{reviewData.summary}</p>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-50">
-                    <div>
-                       <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3">Key Themes</h3>
-                       <div className="flex flex-wrap gap-2">
-                         {reviewData.key_themes?.slice(0, 8).map((kw, i) => (
-                           <span key={i} className="bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded-md border border-blue-100">
-                             {kw}
-                           </span>
-                         ))}
-                       </div>
-                    </div>
-                    <div>
-                      <h3 className="text-sm font-semibold text-slate-500 uppercase tracking-wider mb-3 flex items-center gap-2">
-                        <AlertCircle size={14} className="text-amber-500" /> Open Questions
-                      </h3>
-                      <ul className="space-y-2">
-                        {reviewData.open_questions?.slice(0, 3).map((q, i) => (
-                          <li key={i} className="text-sm text-slate-600 flex items-start">
-                            <span className="text-amber-500 font-bold mr-2">•</span> 
-                            <span>{q}</span>
-                          </li>
-                        ))}
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-              ) : (
-                <div className="text-slate-400 text-sm">Review unavailable for this topic.</div>
-              )}
-            </div>
+            ) : null}
 
             {/* SECTION 4: Top Papers */}
             <div>
-              <div className="flex items-center justify-between mb-4 mt-8">
+              <div className="flex items-center justify-between mb-4 mt-2">
                 <h2 className="text-xl font-bold text-slate-800 flex items-center gap-2">
                   Top Papers <span className="bg-blue-100 text-blue-800 text-xs font-black px-2 py-0.5 rounded-full">{totalCount}</span>
                 </h2>
@@ -310,7 +308,7 @@ export default function ResultsPage() {
                 papers={papers} 
                 loading={loadingPapers} 
                 mode={purpose}
-                emptyMessage="No relevant papers found for this topic." 
+                emptyMessage="No relevant papers found for this strict query domain." 
               />
             </div>
           </div>

@@ -41,6 +41,15 @@ export const searchArxivPapers = async (query, max_results = 20) => {
 };
 
 // Intelligence Endpoints
+export const getAnalysis = async (topic, purpose, paper_ids) => {
+  const response = await api.post('/analytics/analysis', {
+    topic,
+    purpose,
+    paper_ids
+  });
+  return response.data;
+};
+
 export const getLiteratureReview = async (domain) => {
   const response = await api.get('/analytics/literature-review', {
     params: { domain }

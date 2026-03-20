@@ -64,18 +64,20 @@ def llm_rerank(query: str, papers: typing.List[typing.Any]) -> list:
             pass
 
     prompt = f"""
-User query: "{query}"
+STRICT INSTRUCTIONS:
+Given the user query: "{query}"
 
-Below are research papers:
+Select the top 10 MOST relevant papers from the list below.
+- ONLY select papers directly about the query domain.
+- REJECT generic domain matches.
+- If unsure, EXCLUDE the paper.
+- DO NOT guess or hallucinate.
 
+Papers:
 {chr(10).join([f"{i+1}. {p.title}" for i,p in enumerate(candidates)])}
 
-Task:
-Return the top 5 MOST relevant papers to the query.
-Consider domain meaning, not keyword overlap.
-
 Return ONLY indices (as a Python list of integers) like:
-[3,1,5,2,4]
+[3,1,5,2,4,7,9]
 """
     try:
         response = client.models.generate_content(
@@ -87,7 +89,6 @@ Return ONLY indices (as a Python list of integers) like:
             ),
         )
         content = (response.text or "").strip()
-        # Clean up markdown code blocks if the model wrapped it
         if content.startswith("```"):
             lines = content.split("\n")
             if len(lines) > 1:
@@ -98,11 +99,13 @@ Return ONLY indices (as a Python list of integers) like:
         if isinstance(indices, list):
             _LLM_CACHE[cache_key] = indices
             reranked = [candidates[i-1] for i in indices if 1 <= i <= len(candidates)]
+            if len(reranked) < 3:
+                return candidates[:10]  # Fallback
             return reranked
     except Exception as e:
         print(f"LLM Rerank Error: {e}")
-    
-    return papers
+        
+    return candidates[:10]
 
 
 def llm_filter_irrelevant(query: str, papers: typing.List[typing.Any]) -> list:
@@ -303,33 +306,39 @@ Do not use generic statements like "This paper discusses...". Be precise.
         return ""
 
 
-def llm_interpret_query(raw_query: str) -> str:
-    """Use Gemini to interpret messy/typo/natural-language queries into clean search terms."""
+def parse_query_llm(query: str) -> dict:
+    """Extract structured intent (core terms, context terms) from the research query."""
     client = get_gemini_client()
+    default_fallback = {
+        "core_terms": query.lower().split()[:2],
+        "context_terms": [],
+        "domain": "",
+        "intent": "",
+        "must_have": [],
+        "avoid": []
+    }
+    
     if not client:
-        return raw_query
+        return default_fallback
 
-    cache_key = f"interpret_{raw_query.lower().strip()}"
+    cache_key = f"parse_query_{query.lower().strip()}"
     if cache_key in _LLM_CACHE:
         return _LLM_CACHE[cache_key]
 
-    prompt = f"""You are a research query interpreter. The user typed a search query that may contain:
-- Typos or misspellings
-- Natural language (not keywords)
-- Acronyms or abbreviations
-- Vague descriptions
+    prompt = f"""
+    Extract structured intent from this research query.
+    Return ONLY valid JSON.
+    {{
+      "core_terms": [],
+      "context_terms": [],
+      "domain": "",
+      "intent": "",
+      "must_have": [],
+      "avoid": []
+    }}
 
-Your job: extract 2-5 precise academic search keywords from this query.
-Fix any typos. Expand acronyms if needed.
-
-User query: "{raw_query}"
-
-Return ONLY the cleaned keywords separated by spaces. No explanation, no punctuation, no quotes.
-Examples:
-- "how do computers see images" → computer vision image recognition
-- "parkinsons desease eeg" → parkinson disease eeg
-- "ml for fraud" → machine learning fraud detection
-- "ai" → artificial intelligence"""
+    Query: {query}
+    """
 
     try:
         response = client.models.generate_content(
@@ -337,16 +346,18 @@ Examples:
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.0,
-                max_output_tokens=30,
+                response_mime_type="application/json",
             ),
         )
-        interpreted = response.text.strip().lower()
-        # Safety: if LLM returns garbage or too long, fall back
-        if len(interpreted) > 100 or not interpreted:
-            return raw_query
-        _LLM_CACHE[cache_key] = interpreted
-        print(f"LLM Query Interpretation: '{raw_query}' → '{interpreted}'")
-        return interpreted
+        content = (response.text or "").strip()
+        parsed = json.loads(content)
+        
+        # Fallback safety rule: MUST have core_terms
+        if not parsed.get("core_terms"):
+            parsed["core_terms"] = query.lower().split()[:2]
+            
+        _LLM_CACHE[cache_key] = parsed
+        return parsed
     except Exception as e:
-        print(f"LLM Interpret Error: {e}")
-        return raw_query
+        print(f"LLM Query Parser Error: {e}")
+        return default_fallback

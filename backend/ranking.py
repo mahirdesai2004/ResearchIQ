@@ -1,6 +1,32 @@
 # pyre-ignore-all-errors
 from query_parser import normalize
+from query_parser import normalize
 
+def strict_filter(papers, parsed_query):
+    core_terms = parsed_query.get("core_terms", [])
+    context_terms = parsed_query.get("context_terms", [])
+
+    filtered = []
+
+    for p in papers:
+        # Added (or "") to prevent NoneType concatenations
+        text = ((p.title or "") + " " + (p.abstract or "")).lower()
+
+        core_match = sum(1 for t in core_terms if t in text)
+        context_match = sum(1 for t in context_terms if t in text)
+
+        # MUST: at least one core term
+        if core_match == 0:
+            continue
+
+        # Adaptive strictness
+        if len(core_terms) >= 2:
+            if core_match < 2 and context_match == 0:
+                continue
+
+        filtered.append(p)
+
+    return filtered
 
 def compute_term_frequencies(papers):
     """Compute how many papers contain each word (document frequency)."""
