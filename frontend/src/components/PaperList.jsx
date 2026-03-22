@@ -42,20 +42,20 @@ export default function PaperList({ papers, loading, mode = 'deep dive', emptyMe
       : paperAbstract;
 
     return (
-      <div key={paper.id || paperTitle} className={`bg-white border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-md hover:-translate-y-0.5 transition-all duration-200 ${isCard ? 'flex flex-col h-full' : 'mb-4'}`}>
+      <div key={paper.id || paperTitle} className={`bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:border-gray-300 hover:shadow transition-all duration-150 ${isCard ? 'flex flex-col h-full' : 'mb-4'}`}>
         <div className="flex items-start justify-between gap-3 mb-3">
-          <h3 className="text-lg font-semibold text-slate-900 leading-tight">
+          <h3 className="text-lg font-semibold text-gray-900 leading-tight">
             {paperTitle}
           </h3>
           {paperScore > 0 && (
-            <div className="flex-shrink-0 bg-indigo-50 text-indigo-700 text-xs font-bold px-2.5 py-1 rounded-md flex items-center gap-1.5" title="Confidence Score">
+            <div className="flex-shrink-0 bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded flex items-center gap-1.5" title="Confidence Score">
               <Activity size={12} />
               {Math.round(paperScore)}% Match
             </div>
           )}
         </div>
 
-        <div className="flex items-center gap-3 text-sm text-slate-500 font-medium mb-3">
+        <div className="flex items-center gap-3 text-sm text-gray-500 mb-3">
           <span className="flex items-center gap-1"><Calendar size={14} /> {paperYear}</span>
           {paperAuthors.length > 0 && (
             <span className="flex items-center gap-1 text-xs truncate max-w-xs">
@@ -65,14 +65,14 @@ export default function PaperList({ papers, loading, mode = 'deep dive', emptyMe
         </div>
 
         {matchedKeywords.length > 0 && (
-          <div className="mb-4 bg-emerald-50/50 border border-emerald-100 rounded-lg p-3">
-            <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-emerald-800 mb-2">
+          <div className="mb-4 bg-gray-50 border border-gray-200 rounded-lg p-3">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-gray-700 mb-2">
                <HelpCircle size={14} /> Why this paper?
             </div>
             <div className="flex flex-wrap gap-1.5 pt-1">
-              <span className="text-xs text-slate-600 mr-1 flex items-center">Matched:</span>
+              <span className="text-xs text-gray-500 mr-1 flex items-center">Matched:</span>
               {matchedKeywords.map((kw, i) => (
-                <span key={i} className="inline-flex items-center gap-1 bg-white border border-emerald-200 text-emerald-700 text-[10px] font-bold px-2 py-0.5 rounded shadow-sm">
+                <span key={i} className="inline-flex items-center gap-1 bg-white border border-gray-200 text-gray-700 text-[10px] font-medium px-2 py-0.5 rounded transition-colors hover:bg-gray-50 cursor-pointer">
                   <Tag size={10} /> {kw}
                 </span>
               ))}
@@ -92,14 +92,14 @@ export default function PaperList({ papers, loading, mode = 'deep dive', emptyMe
            </p>
         </div>
 
-        <div className="flex gap-2 mt-5 pt-4 border-t border-gray-50">
+        <div className="flex gap-4 mt-5 pt-4 border-t border-gray-100">
           {paperArxivUrl && (
-            <a href={paperArxivUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-blue-600 hover:text-blue-800 transition-colors">
+            <a href={paperArxivUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
               <ExternalLink size={14} /> arXiv
             </a>
           )}
           {paperPdfUrl && (
-            <a href={paperPdfUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1.5 text-xs font-bold text-slate-500 hover:text-slate-800 transition-colors ml-3">
+            <a href={paperPdfUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors">
               <FileDown size={14} /> PDF
             </a>
           )}

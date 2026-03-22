@@ -1,18 +1,18 @@
 import {
   ResponsiveContainer,
-  LineChart,
-  Line,
+  AreaChart,
+  Area,
   XAxis,
   YAxis,
   CartesianGrid,
   Tooltip,
 } from 'recharts';
 
-export default function Chart({ data, title, dataKey = 'count', xAxisKey = 'year', color = '#3b82f6' }) {
+export default function Chart({ data, title, dataKey = 'count', xAxisKey = 'year', color = '#000000' }) {
   if (!data || data.length === 0) {
     return (
-      <div className="glass-card p-6 flex items-center justify-center h-72 text-slate-400">
-        No data available for chart
+      <div className="bg-white border border-gray-200 rounded-xl p-6 flex items-center justify-center h-80 text-gray-400 shadow-sm text-sm">
+        No data available for visualization
       </div>
     );
   }
@@ -25,47 +25,67 @@ export default function Chart({ data, title, dataKey = 'count', xAxisKey = 'year
   });
 
   return (
-    <div className="glass-card p-6 w-full">
+    <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm w-full">
       {title && (
-        <h3 className="text-slate-800 font-medium mb-6">{title}</h3>
+        <h3 className="text-gray-900 font-semibold text-base mb-6 tracking-tight">
+          {title}
+        </h3>
       )}
-      <div className="h-72 w-full">
+
+      <div className="h-72 w-full -ml-2">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={sortedData} margin={{ top: 5, right: 20, bottom: 5, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+          <AreaChart data={sortedData} margin={{ top: 10, right: 30, bottom: 0, left: 0 }}>
+            <defs>
+              <linearGradient id="colorGradient" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={color} stopOpacity={0.1}/>
+                <stop offset="100%" stopColor={color} stopOpacity={0}/>
+              </linearGradient>
+            </defs>
+            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e5e7eb" />
             <XAxis 
               dataKey={xAxisKey} 
-              axisLine={false}
+              axisLine={{ stroke: '#e5e7eb', strokeWidth: 1 }}
               tickLine={false}
-              tick={{ fill: '#64748b', fontSize: 12 }}
-              dy={10}
+              tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 500 }}
+              tickMargin={12}
             />
             <YAxis 
               axisLine={false}
               tickLine={false}
-              tick={{ fill: '#64748b', fontSize: 12 }}
-              dx={-10}
+              tick={{ fill: '#6b7280', fontSize: 12, fontWeight: 500 }}
+              tickMargin={12}
             />
             <Tooltip
               contentStyle={{ 
+                backgroundColor: '#111827',
                 borderRadius: '8px', 
-                border: 'none', 
-                boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)',
-                padding: '12px'
+                border: '1px solid #374151', 
+                boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)',
+                padding: '8px 12px',
+                color: '#f9fafb',
               }}
-              itemStyle={{ color: '#0f172a', fontWeight: 600 }}
-              labelStyle={{ color: '#64748b', marginBottom: '4px' }}
+              itemStyle={{ color: '#ffffff', fontWeight: 600, fontSize: '14px', paddingTop: '2px' }}
+              labelStyle={{ color: '#9ca3af', marginBottom: '2px', fontSize: '12px', fontWeight: 500 }}
+              cursor={{ stroke: '#d1d5db', strokeWidth: 1, strokeDasharray: '4 4' }}
+              animationDuration={150}
             />
-            <Line 
+            <Area 
               type="monotone" 
               dataKey={dataKey} 
               stroke={color} 
-              strokeWidth={3}
-              dot={{ r: 4, fill: color, strokeWidth: 2, stroke: '#fff' }}
-              activeDot={{ r: 6, strokeWidth: 0 }}
-              animationDuration={1500}
+              strokeWidth={2}
+              fillOpacity={1}
+              fill="url(#colorGradient)"
+              dot={{ r: 3, fill: '#ffffff', strokeWidth: 2, stroke: color }}
+              activeDot={{ 
+                r: 5, 
+                strokeWidth: 2, 
+                fill: '#ffffff', 
+                stroke: color,
+              }}
+              animationDuration={500}
             />
-          </LineChart>
+          </AreaChart>
         </ResponsiveContainer>
       </div>
     </div>

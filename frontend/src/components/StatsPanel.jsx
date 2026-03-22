@@ -5,7 +5,7 @@ export default function StatsPanel({ stats, loading }) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="glass-card p-5 animate-pulse">
+          <div key={i} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm animate-pulse">
             <div className="h-10 w-10 bg-slate-200 rounded-lg mb-4"></div>
             <div className="h-6 w-24 bg-slate-200 rounded mb-2"></div>
             <div className="h-4 w-32 bg-slate-100 rounded"></div>
@@ -47,14 +47,14 @@ export default function StatsPanel({ stats, loading }) {
   return (
     <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
       {statItems.map((item, idx) => (
-        <div key={idx} className="glass-card p-5 hover:shadow-md transition-shadow">
+        <div key={idx} className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm hover:border-gray-300 hover:shadow transition-all duration-150 cursor-pointer">
           <div className="flex items-center gap-4 mb-3">
-            <div className={`${item.bg} p-2.5 rounded-xl`}>
+            <div className={`${item.bg} p-2.5 rounded-lg border border-gray-100`}>
               {item.icon}
             </div>
-            <h3 className="text-slate-500 font-medium text-sm tracking-wide uppercase">{item.title}</h3>
+            <h3 className="text-gray-500 font-semibold text-sm tracking-wide uppercase">{item.title}</h3>
           </div>
-          <p className="text-2xl font-bold text-slate-800">{item.value}</p>
+          <p className="text-2xl font-bold text-gray-900">{item.value}</p>
         </div>
       ))}
     </div>
