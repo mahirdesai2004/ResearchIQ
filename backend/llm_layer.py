@@ -21,6 +21,8 @@ def strip_markdown(text: str) -> str:
     text = re.sub(r'\n{3,}', '\n\n', text)  # excess newlines
     return text.strip()
 
+
+
 _clients = []
 _current_client_idx = 0
 
@@ -166,22 +168,30 @@ def quick_summary(query: str, papers: typing.List[typing.Any]) -> str:
     if cache_key in _LLM_CACHE:
         return _LLM_CACHE[cache_key]
 
-    prompt = f"""
-Summarize the research topic: {query}
+    paper_context = chr(10).join([
+        f"- {p.title}: {(p.abstract or '')[:200]}" 
+        for p in papers[:5]
+    ])
 
-Based on papers:
-{chr(10).join([p.title for p in papers[:5]])}
+    prompt = f"""You are a research analyst. Write a complete analysis.
 
-Give:
-- 2-3 sentence summary
-"""
+Given these papers on "{query}", generate:
+
+1. A 3-4 sentence executive summary explaining the current state of research
+2. Key techniques and methods being used (list 3-5)
+3. The main trend or direction in this field
+
+Papers:
+{paper_context}
+
+Be specific. Reference actual methods and findings. No generic statements. Write complete sentences - do not cut off mid-sentence."""
     try:
         response = client.models.generate_content(
             model='gemini-2.5-flash',
             contents=prompt,
             config=types.GenerateContentConfig(
-                temperature=0.2,
-                max_output_tokens=150,
+                temperature=0.3,
+                max_output_tokens=800,
             ),
         )
         ans = strip_markdown(response.text.strip())
@@ -361,3 +371,108 @@ def parse_query_llm(query: str) -> dict:
     except Exception as e:
         print(f"LLM Query Parser Error: {e}")
         return default_fallback
+
+
+def paper_explain(paper) -> str:
+    """Explain a paper simply and identify research gaps."""
+    client = get_gemini_client()
+    if not client:
+        return "Explanation:\nLLM not configured.\n\nResearch Gap:\n- N/A"
+
+    cache_key = f"paper_explain_structured_{getattr(paper, 'id', str(paper))}"
+    if cache_key in _LLM_CACHE:
+        return _LLM_CACHE[cache_key]
+
+    title = getattr(paper, 'title', '') if not isinstance(paper, dict) else paper.get('title', '')
+    abstract = getattr(paper, 'abstract', '') if not isinstance(paper, dict) else paper.get('abstract', '')
+
+    prompt = f"""You are an expert research assistant.
+
+Explain the following research paper to a NON-TECHNICAL person.
+
+Paper Title:
+{title}
+
+Abstract:
+{(abstract or '')[:800]}
+
+Instructions:
+1. Explain in simple, clear language (no jargon)
+2. Explain what problem the paper is solving
+3. Explain how the solution works (high-level)
+4. MOST IMPORTANT: Identify the research gap or limitation mentioned or implied
+
+Output format:
+
+Explanation:
+<simple explanation>
+
+Research Gap:
+- <gap 1>
+- <gap 2 (if any)>
+"""
+
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(temperature=0.3, max_output_tokens=600),
+        )
+        ans = response.text.strip()
+        _LLM_CACHE[cache_key] = ans
+        return ans
+    except Exception as e:
+        print(f"Paper explain error: {e}")
+        return "Explanation:\nFailed to generate explanation.\n\nResearch Gap:\n- Could not identify gaps."
+
+
+def generate_gap_sentences(topic: str, papers: list) -> list:
+    """Generate 2-3 actionable research gap sentences from papers."""
+    client = get_gemini_client()
+    if not client:
+        return ["LLM not configured for gap detection."]
+
+    paper_ids = ','.join([str(getattr(p, 'id', i)) for i, p in enumerate(papers[:10])])
+    cache_key = f"gaps_{topic}_{paper_ids}"
+    if cache_key in _LLM_CACHE:
+        return _LLM_CACHE[cache_key]
+
+    paper_context = chr(10).join([
+        f"- {getattr(p, 'title', '') if not isinstance(p, dict) else p.get('title', '')}: {(getattr(p, 'abstract', '') if not isinstance(p, dict) else p.get('abstract', '') or '')[:200]}"
+        for p in papers[:10]
+    ])
+
+    prompt = f"""You are a research gap analyst. Analyze these papers about "{topic}" and identify 2-3 specific research gaps.
+
+Papers:
+{paper_context}
+
+Rules:
+- Each gap MUST be concrete and reference specific methods or limitations from the papers
+- NO generic phrases like "more research is needed" or "further investigation required"
+- Each gap should suggest what is MISSING, UNDEREXPLORED, or CONTRADICTORY
+- Be specific to this exact domain
+
+Return ONLY a JSON array of strings like:
+["Gap 1 sentence", "Gap 2 sentence", "Gap 3 sentence"]"""
+
+    try:
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=prompt,
+            config=types.GenerateContentConfig(
+                temperature=0.3,
+                response_mime_type="application/json",
+                max_output_tokens=400,
+            ),
+        )
+        gaps = json.loads(response.text.strip())
+        if isinstance(gaps, list) and len(gaps) > 0:
+            _LLM_CACHE[cache_key] = gaps
+            return gaps
+    except Exception as e:
+        print(f"Gap generation error: {e}")
+    return ["Limited cross-domain evaluation of proposed methods across diverse datasets.", 
+            "Few studies address real-time deployment constraints in production environments."]
+
+

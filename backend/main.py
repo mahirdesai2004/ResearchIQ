@@ -23,10 +23,16 @@ from llm_layer import ( # pyre-ignore
     literature_review_llm, 
     explain_trend_llm, 
     why_this_paper,
-    parse_query_llm
+    parse_query_llm,
+    paper_summary,
+    paper_explain,
+    paper_flowchart,
+    generate_gap_sentences,
+    generate_field_flow
 )
 from ranking import strict_filter, score_and_filter, compute_term_frequencies # pyre-ignore
 from embeddings import build_index, semantic_search # pyre-ignore
+from chat_engine import chat_with_papers, clear_session # pyre-ignore
 
 # Initialize DB tables
 Base.metadata.create_all(bind=engine)
@@ -165,15 +171,27 @@ def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
     # Build response papers
     response_papers = []
     core_terms = parsed.get("core_terms", [])
+    context_terms = parsed.get("context_terms", [])
+    all_search_terms = core_terms + context_terms
     
     for p in final_ranked[:req.num_papers]:
         # Compute confidence score
         text = ((p.title or "") + " " + (p.abstract or "")).lower()
         core_matches = sum(1 for t in core_terms if t in text)
-        total_core = len(core_terms) if core_terms else 1
-        confidence = int((core_matches / total_core) * 100)
+        context_matches = sum(1 for t in context_terms if t in text)
+        total_terms = len(all_search_terms) if all_search_terms else 1
+        confidence = int(((core_matches + context_matches) / total_terms) * 100)
         
-        matched_keywords = [t for t in core_terms if t in text]
+        # Collect ALL matched terms (core + context)
+        matched_keywords = [t for t in all_search_terms if t in text]
+        
+        # Build intelligent reason
+        reasons = []
+        if core_matches > 0:
+            reasons.append(f"Core: {', '.join([t for t in core_terms if t in text])}")
+        if context_matches > 0:
+            reasons.append(f"Context: {', '.join([t for t in context_terms if t in text])}")
+        llm_reason = " | ".join(reasons) if reasons else "Semantic match via FAISS"
         
         response_papers.append({
             "title": p.title,
@@ -183,7 +201,7 @@ def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
             "matched_keywords": matched_keywords,
             "score": confidence,
             "id": p.id,
-            "llm_reason": f"Core term match: {', '.join(matched_keywords)}"
+            "llm_reason": llm_reason
         })
         
     return {
@@ -214,11 +232,52 @@ def generate_analysis(req: AnalysisRequest, db: Session = Depends(get_db)):
     elif req.purpose == "literature review":
         rev = literature_review_llm(req.topic, ordered_papers[:10])
         summary_text = rev.get("summary", "Summary not generated.")
+    else:
+        summary_text = quick_summary(req.topic, ordered_papers[:5])
+
+    # Generate LLM gap sentences
+    gaps = generate_gap_sentences(req.topic, ordered_papers) if ordered_papers else []
         
     return {
         "summary": summary_text,
+        "gaps": gaps,
         "status": "complete"
     }
+
+# -------------------------------------------------------------------
+# Chat Endpoint (LangChain-powered)
+# -------------------------------------------------------------------
+class ChatRequest(BaseModel):
+    query: str
+    papers: List[Dict[str, Any]] = []
+    session_id: str = "default"
+
+@app.post("/chat/query")
+def chat_query(req: ChatRequest):
+    result = chat_with_papers(req.query, req.papers, req.session_id)
+    return result
+
+@app.post("/chat/clear")
+def chat_clear(session_id: str = "default"):
+    clear_session(session_id)
+    return {"status": "cleared"}
+
+# -------------------------------------------------------------------
+# Paper-Level Analysis
+# -------------------------------------------------------------------
+class PaperAnalyzeRequest(BaseModel):
+    paper_id: str
+
+@app.post("/paper/analyze")
+def analyze_paper(req: PaperAnalyzeRequest, db: Session = Depends(get_db)):
+    paper = db.query(PaperModel).filter(PaperModel.id == req.paper_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+    
+    result = paper_explain(paper)
+    
+    return {"result": result}
+
 
 @app.get("/analytics/keyword-trend")
 def keyword_trend(keyword: str):
