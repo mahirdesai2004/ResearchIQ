@@ -71,4 +71,22 @@ export const getGapDetection = async (domain) => {
   return response.data;
 };
 
+// Chat with papers (LangChain-powered)
+export const chatQuery = async (query, papers, session_id = 'default') => {
+  const response = await api.post('/chat/query', {
+    query,
+    papers: papers.slice(0, 10),
+    session_id
+  });
+  return response.data;
+};
+
+// Paper-level analysis (explain)
+export const analyzePaper = async (paper_id) => {
+  const response = await api.post('/paper/analyze', {
+    paper_id: String(paper_id)
+  });
+  return response.data;
+};
+
 export default api;

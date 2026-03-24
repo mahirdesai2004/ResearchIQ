@@ -1,8 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import SearchBar from '../components/SearchBar';
 import PaperList from '../components/PaperList';
 import Chart from '../components/Chart';
+import ChatPanel from '../components/ChatPanel';
+import PaperAnalysisModal from '../components/PaperAnalysisModal';
 import { 
   researchQuery, 
   getKeywordTrend, 
@@ -18,7 +20,8 @@ import {
   Lightbulb, 
   Target, 
   Download,
-  AlertCircle
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
 
 export default function ResultsPage() {
@@ -48,6 +51,16 @@ export default function ResultsPage() {
   // User controls
   const [purpose, setPurpose] = useState('deep dive');
   const [numPapers, setNumPapers] = useState(20);
+
+  // Paper analysis modal
+  const [analysisPaper, setAnalysisPaper] = useState(null);
+
+  // LLM gap sentences from analysis
+  const [gapSentences, setGapSentences] = useState([]);
+
+  const handleAnalyzePaper = (paper) => {
+    setAnalysisPaper(paper);
+  };
 
   const handleSearchTrigger = () => {
     // If the query is essentially the same, just re-fetch the data.
@@ -93,6 +106,9 @@ export default function ResultsPage() {
             getAnalysis(query, purpose, pIds)
               .then(analysisRes => {
                 setAnalysisSummary(analysisRes.summary);
+                if (analysisRes.gaps && Array.isArray(analysisRes.gaps)) {
+                  setGapSentences(analysisRes.gaps);
+                }
               })
               .catch(err => {
                 console.error("Analysis summary failed:", err);
@@ -102,6 +118,7 @@ export default function ResultsPage() {
           }, 1000);
         } else {
           setAnalysisSummary(null);
+          setGapSentences([]);
         }
       } catch (err) {
         console.error("Error fetching research query:", err);
@@ -308,7 +325,8 @@ export default function ResultsPage() {
                 papers={papers} 
                 loading={loadingPapers} 
                 mode={purpose}
-                emptyMessage="No relevant papers found for this strict query domain." 
+                emptyMessage="No relevant papers found for this strict query domain."
+                onAnalyze={handleAnalyzePaper}
               />
             </div>
           </div>
@@ -382,7 +400,7 @@ export default function ResultsPage() {
               )}
             </div>
 
-            {/* SECTION 3: Research Gaps */}
+            {/* SECTION 3: Research Gaps (LLM Sentences) */}
             <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
               <div className="flex items-center gap-3 mb-4">
                  <div className="p-2 bg-emerald-50 rounded text-emerald-700">
@@ -391,12 +409,21 @@ export default function ResultsPage() {
                 <h3 className="text-lg font-semibold text-gray-900 tracking-tight">Research Gaps</h3>
               </div>
               <p className="text-sm text-gray-500 mb-4">
-                Low-frequency topics in this domain that may present new opportunities.
+                AI-identified gaps and underexplored areas in this domain.
               </p>
               
-              {loadingGaps ? (
-                <div className="flex flex-wrap gap-2 animate-pulse">
-                  {[1,2,3,4].map(n => <div key={n} className="h-8 w-20 bg-slate-100 rounded-lg mt-1" />)}
+              {gapSentences.length > 0 ? (
+                <ul className="space-y-3">
+                  {gapSentences.map((gap, i) => (
+                    <li key={i} className="flex items-start gap-2 text-sm text-gray-700 leading-relaxed">
+                      <span className="flex-shrink-0 w-5 h-5 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center text-[10px] font-bold mt-0.5">{i + 1}</span>
+                      {gap}
+                    </li>
+                  ))}
+                </ul>
+              ) : loadingGaps ? (
+                <div className="space-y-2 animate-pulse">
+                  {[1,2,3].map(n => <div key={n} className="h-4 bg-slate-100 rounded w-full" />)}
                 </div>
               ) : gapData?.gaps?.length > 0 ? (
                 <div className="flex flex-wrap gap-2">
@@ -421,6 +448,17 @@ export default function ResultsPage() {
           </div>
           
         </div>
+      )}
+
+      {/* Chat Panel */}
+      {query && <ChatPanel papers={papers} topic={query} />}
+
+      {/* Paper Analysis Modal */}
+      {analysisPaper && (
+        <PaperAnalysisModal
+          paper={analysisPaper}
+          onClose={() => setAnalysisPaper(null)}
+        />
       )}
     </div>
   );

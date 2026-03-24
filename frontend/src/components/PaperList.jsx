@@ -1,6 +1,6 @@
-import { FileText, Calendar, ExternalLink, FileDown, Users, Tag, HelpCircle, Activity } from 'lucide-react';
+import { FileText, Calendar, ExternalLink, FileDown, Users, Tag, HelpCircle, Activity, Sparkles, Brain, GitBranch } from 'lucide-react';
 
-export default function PaperList({ papers, loading, mode = 'deep dive', emptyMessage = 'No papers found.' }) {
+export default function PaperList({ papers, loading, mode = 'deep dive', emptyMessage = 'No papers found.', onAnalyze }) {
   if (loading) {
     return (
       <div className="space-y-4">
@@ -92,16 +92,32 @@ export default function PaperList({ papers, loading, mode = 'deep dive', emptyMe
            </p>
         </div>
 
-        <div className="flex gap-4 mt-5 pt-4 border-t border-gray-100">
-          {paperArxivUrl && (
-            <a href={paperArxivUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
-              <ExternalLink size={14} /> arXiv
-            </a>
-          )}
-          {paperPdfUrl && (
-            <a href={paperPdfUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors">
-              <FileDown size={14} /> PDF
-            </a>
+        <div className="flex items-center gap-3 mt-5 pt-4 border-t border-gray-100">
+          {/* Paper links */}
+          <div className="flex gap-3">
+            {paperArxivUrl && (
+              <a href={paperArxivUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
+                <ExternalLink size={14} /> arXiv
+              </a>
+            )}
+            {paperPdfUrl && (
+              <a href={paperPdfUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors">
+                <FileDown size={14} /> PDF
+              </a>
+            )}
+          </div>
+          
+          {/* AI Action Buttons */}
+          {onAnalyze && paper.id && (
+            <div className="flex gap-2 ml-auto">
+              <button
+                onClick={() => onAnalyze(paper)}
+                className="inline-flex items-center gap-1 text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                title="Explain Simply"
+              >
+                <Brain size={12} /> Explain
+              </button>
+            </div>
           )}
         </div>
       </div>
