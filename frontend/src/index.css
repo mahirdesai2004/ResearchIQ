@@ -11,8 +11,8 @@
     --popover: #ffffff;
     --popover-foreground: #0f172a;
     
-    --primary: #3b82f6;
-    --primary-foreground: #f8fafc;
+    --primary: #f97316;
+    --primary-foreground: #ffffff;
     
     --secondary: #f1f5f9;
     --secondary-foreground: #0f172a;
@@ -26,9 +26,9 @@
     --destructive: #ef4444;
     --destructive-foreground: #f8fafc;
 
-    --border: #e2e8f0;
-    --input: #e2e8f0;
-    --ring: #3b82f6;
+    --border: #fed7aa;
+    --input: #ffedd5;
+    --ring: #f97316;
     
     --radius: 0.5rem;
   }
@@ -75,6 +75,62 @@
 
 @layer utilities {
   .glass-card {
-    @apply bg-white/70 backdrop-blur-md border border-gray-100 shadow-sm rounded-xl;
+    @apply bg-white/80 backdrop-blur-md border border-gray-100 shadow-xl rounded-2xl;
   }
+  
+  @keyframes gradient-x {
+    0%, 100% {
+      background-size: 200% 200%;
+      background-position: left center;
+    }
+    50% {
+      background-size: 200% 200%;
+      background-position: right center;
+    }
+  }
+
+  @keyframes float {
+    0% { transform: translateY(0px); }
+    50% { transform: translateY(-10px); }
+    100% { transform: translateY(0px); }
+  }
+
+  @keyframes slide-up {
+    0% {
+      opacity: 0;
+      transform: translateY(20px);
+    }
+    100% {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  @keyframes pulse-glow {
+    0%, 100% {
+      box-shadow: 0 0 15px 0px rgba(249, 115, 22, 0.4);
+    }
+    50% {
+      box-shadow: 0 0 30px 5px rgba(249, 115, 22, 0.8);
+    }
+  }
+
+  .animate-gradient-x {
+    animation: gradient-x 6s ease infinite;
+  }
+  .animate-float {
+    animation: float 4s ease-in-out infinite;
+  }
+  .animate-slide-up {
+    animation: slide-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+  .animate-pulse-glow {
+    animation: pulse-glow 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+  }
+  
+  /* Staggered animation delays for lists */
+  .delay-100 { animation-delay: 100ms; }
+  .delay-200 { animation-delay: 200ms; }
+  .delay-300 { animation-delay: 300ms; }
+  .delay-400 { animation-delay: 400ms; }
 }

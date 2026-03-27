@@ -5,6 +5,7 @@ import PaperList from '../components/PaperList';
 import Chart from '../components/Chart';
 import ChatPanel from '../components/ChatPanel';
 import PaperAnalysisModal from '../components/PaperAnalysisModal';
+import BackgroundParticles from '../components/BackgroundParticles';
 import { 
   researchQuery, 
   getKeywordTrend, 
@@ -21,7 +22,9 @@ import {
   Target, 
   Download,
   AlertCircle,
-  Loader2
+  Loader2,
+  ThumbsUp,
+  ThumbsDown
 } from 'lucide-react';
 
 export default function ResultsPage() {
@@ -228,12 +231,21 @@ export default function ResultsPage() {
     }
   };
 
+  // gapChartData is removed since gaps are now full sentences rendered directly
+
   return (
-    <div className="w-full max-w-7xl mx-auto animate-fade-in p-4 xl:p-0 mb-10">
+    <div className="relative min-h-screen w-full font-sans">
+      <BackgroundParticles />
+      <div className="w-full max-w-7xl mx-auto animate-fade-in p-4 xl:p-0 mb-10 relative z-10">
       
       {/* Top Search & Controls Area */}
-      <div className="mb-8 pt-6 pb-6 border-b border-gray-200">
-        <h1 className="text-2xl font-semibold text-gray-900 tracking-tight mb-6">Research Dashboard</h1>
+      <div className="mb-8 pt-6 pb-6 border-b border-orange-100">
+        <h1 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-500 via-rose-500 to-purple-600 animate-gradient-x tracking-tight mb-2">
+          Research Dashboard
+        </h1>
+        <p className="text-slate-500 text-sm font-medium mb-6">
+          Contextualized from a diverse global corpus of <span className="text-orange-600 font-bold">~200M+ publications</span>
+        </p>
         
         <div className="flex flex-col lg:flex-row gap-6 items-start lg:items-center">
           <div className="flex-1 w-full lg:max-w-xl">
@@ -248,7 +260,7 @@ export default function ResultsPage() {
             <select
               value={purpose}
               onChange={(e) => setPurpose(e.target.value)}
-              className="text-sm font-medium border border-gray-300 rounded-md px-3 py-1.5 bg-white text-gray-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-colors cursor-pointer"
+              className="text-sm font-medium border border-gray-300 rounded-md px-3 py-1.5 bg-white text-gray-700 focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-colors cursor-pointer"
             >
               <option value="deep dive">Deep Dive</option>
               <option value="literature review">Literature Review</option>
@@ -261,7 +273,7 @@ export default function ResultsPage() {
             <select
               value={numPapers}
               onChange={(e) => setNumPapers(Number(e.target.value))}
-              className="text-sm font-medium border border-gray-300 rounded-md px-3 py-1.5 bg-white text-gray-700 focus:ring-2 focus:ring-blue-100 focus:border-blue-500 outline-none transition-colors cursor-pointer"
+              className="text-sm font-medium border border-gray-300 rounded-md px-3 py-1.5 bg-white text-gray-700 focus:ring-2 focus:ring-orange-100 focus:border-orange-500 outline-none transition-colors cursor-pointer"
             >
               <option value={10}>10</option>
               <option value={20}>20</option>
@@ -270,7 +282,7 @@ export default function ResultsPage() {
             
             <button 
               onClick={handleSearchTrigger}
-              className="ml-auto lg:ml-4 bg-slate-900 hover:bg-slate-800 text-white font-medium py-1.5 px-6 rounded-md transition-colors duration-150 cursor-pointer"
+              className="ml-auto lg:ml-4 bg-gradient-to-r from-orange-500 to-rose-500 hover:from-orange-600 hover:to-rose-600 text-white font-medium py-1.5 px-6 rounded-md transition-all duration-300 shadow-md hover:shadow-lg hover:-translate-y-0.5 cursor-pointer"
             >
               Analyze
             </button>
@@ -291,25 +303,32 @@ export default function ResultsPage() {
             
             {/* SECTION 1: LLM Executive Summary */}
             {analyzingSummary || analysisSummary ? (
-              <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm mb-8">
+              <div className="glass-card p-6 mb-8 animate-slide-up">
                 <div className="flex items-center gap-3 mb-4">
-                  <div className="p-2 bg-gray-100 rounded text-gray-700">
+                  <div className="p-2 bg-orange-50 rounded text-orange-600">
                     <Activity size={20} className={analyzingSummary ? "animate-spin" : ""} />
                   </div>
-                  <h2 className="text-lg font-semibold text-gray-900 tracking-tight">
+                  <h2 className="text-lg font-bold text-gray-900 tracking-tight">
                     {analyzingSummary ? "Analyzing research trends..." : "Executive Summary"}
                   </h2>
                 </div>
                 {analyzingSummary ? (
                   <div className="space-y-3 animate-pulse">
-                    <div className="h-4 bg-blue-200/50 rounded w-full"></div>
-                    <div className="h-4 bg-blue-200/50 rounded w-5/6"></div>
-                    <div className="h-4 bg-blue-200/50 rounded w-3/4"></div>
+                    <div className="h-4 bg-orange-200/50 rounded w-full"></div>
+                    <div className="h-4 bg-orange-200/50 rounded w-5/6"></div>
+                    <div className="h-4 bg-orange-200/50 rounded w-3/4"></div>
                   </div>
                 ) : (
-                  <p className="text-gray-700 leading-relaxed text-sm">
-                    {analysisSummary}
-                  </p>
+                  <div>
+                    <p className="text-gray-700 leading-relaxed text-sm mb-4">
+                      {analysisSummary}
+                    </p>
+                    <div className="flex items-center gap-3 border-t border-orange-100 pt-3">
+                      <span className="text-xs text-gray-500 font-medium">Was this AI summary helpful?</span>
+                      <button className="text-gray-400 hover:text-emerald-500 transition-colors" title="Train Model"><ThumbsUp size={16}/></button>
+                      <button className="text-gray-400 hover:text-rose-500 transition-colors" title="Train Model"><ThumbsDown size={16}/></button>
+                    </div>
+                  </div>
                 )}
               </div>
             ) : null}
@@ -335,12 +354,12 @@ export default function ResultsPage() {
           <div className="lg:col-span-4 space-y-8">
             
             {/* SECTION 5: Export Data Panel */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <div className="glass-card p-6 animate-slide-up delay-100">
               <div className="flex items-center gap-3 mb-3">
-                <div className="p-2 bg-blue-50 rounded text-blue-600">
+                <div className="p-2 bg-rose-50 rounded text-rose-600">
                   <Target size={20} />
                 </div>
-                <h2 className="text-lg font-semibold text-gray-900 tracking-tight">Export Data</h2>
+                <h2 className="text-lg font-bold text-gray-900 tracking-tight">Export Data</h2>
               </div>
               <p className="text-gray-500 text-sm mb-6 leading-relaxed">
                 Download structured datasets to use in tools like Tableau or Excel for deeper analysis, custom dashboards, and reporting.
@@ -349,14 +368,14 @@ export default function ResultsPage() {
               <div className="space-y-3">
                 <button 
                   onClick={() => triggerCSVDownload(`http://127.0.0.1:8000/export/tableau-data?domain=${encodeURIComponent(query)}`, "researchIQ_papers.csv")}
-                  className="w-full flex items-center justify-center gap-2 bg-slate-900 text-white hover:bg-slate-800 py-2.5 px-4 rounded-md font-medium transition-colors duration-150 cursor-pointer shadow-sm"
+                  className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-slate-800 to-slate-900 text-white hover:from-slate-700 hover:to-slate-800 py-2.5 px-4 rounded-md font-medium transition-all duration-300 hover:shadow-lg cursor-pointer shadow-sm hover:-translate-y-0.5"
                 >
                   <Download size={16} />
                   Raw Data (All Papers)
                 </button>
                 <button
                   onClick={() => triggerCSVDownload(`http://127.0.0.1:8000/export/tableau-aggregates`, "researchIQ_aggregates.csv")}
-                  className="w-full flex items-center justify-center gap-2 bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 hover:text-gray-900 py-2 px-4 rounded-md font-medium transition-colors duration-150 cursor-pointer shadow-sm"
+                  className="w-full flex items-center justify-center gap-2 bg-white text-gray-700 border border-gray-300 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 py-2 px-4 rounded-md font-medium transition-all duration-300 cursor-pointer shadow-sm hover:-translate-y-0.5"
                 >
                   <Download size={16} />
                   Processed Data (Trends & Counts)
@@ -364,49 +383,74 @@ export default function ResultsPage() {
               </div>
             </div>
 
-            {/* SECTION 2: Trend Visualization */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            {/* SECTION 2: Analytics Visualizations */}
+            <div className="glass-card p-6 animate-slide-up delay-200">
               <div className="flex items-center gap-3 mb-4">
-                <div className="p-2 bg-purple-50 rounded text-purple-700">
+                <div className="p-2 bg-purple-50 rounded text-purple-600">
                   <Activity size={20} />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 tracking-tight">Trend Visualization</h3>
+                <h3 className="text-lg font-bold text-gray-900 tracking-tight">Data Analytics</h3>
               </div>
-              <p className="text-sm text-gray-500 mb-4">Explore trends across years using the chart</p>
+              <p className="text-sm text-gray-500 mb-6">Explore publication trends and data sources</p>
               
-              {loadingTrend ? (
-                <div className="h-48 w-full bg-slate-100 animate-pulse rounded-xl"></div>
-              ) : trendData.length > 0 ? (
+              <div className="space-y-8">
+                {/* Chart 1: Trend */}
                 <div>
-                  <Chart 
-                    data={trendData} 
-                    dataKey="count" 
-                    xAxisKey="year" 
-                    color="#8b5cf6" 
-                    onClick={handleChartClick}
-                  />
-                  {loadingExplanation ? (
-                    <div className="text-sm text-slate-400 mt-4 animate-pulse">Analyzing trend spike...</div>
-                  ) : trendExplanation ? (
-                    <div className="mt-4 p-3 bg-purple-50 border border-purple-100 rounded-lg text-sm text-purple-800">
-                      <strong>Insight:</strong> {trendExplanation}
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Publication Trend</h4>
+                  {loadingTrend ? (
+                    <div className="h-48 w-full bg-purple-50/50 animate-pulse rounded-xl"></div>
+                  ) : trendData.length > 0 ? (
+                    <div>
+                      <Chart 
+                        data={trendData} 
+                        dataKey="count" 
+                        xAxisKey="year" 
+                        color="#a855f7" 
+                        onClick={handleChartClick}
+                      />
+                      {loadingExplanation ? (
+                        <div className="text-sm text-purple-400 mt-4 animate-pulse">Analyzing trend spike...</div>
+                      ) : trendExplanation ? (
+                        <div className="mt-4 p-3 bg-purple-50 border border-purple-100 rounded-lg text-sm text-purple-800 animate-slide-up">
+                          <strong>Insight:</strong> {trendExplanation}
+                        </div>
+                      ) : null}
                     </div>
-                  ) : null}
+                  ) : (
+                    <div className="h-24 flex items-center justify-center text-sm text-purple-400/70 bg-purple-50/50 border border-dashed border-purple-200 rounded-xl">
+                      Trend Timeline unavailable for this corpus
+                    </div>
+                  )}
                 </div>
-              ) : (
-                <div className="h-48 flex items-center justify-center text-sm text-slate-400 bg-slate-50 rounded-xl">
-                  Not enough data for trend
+
+                {/* Chart 2: Top Research Gaps Addressed (Sentence Form) */}
+                <div>
+                  <h4 className="text-sm font-semibold text-gray-700 mb-3">Top Research Gaps Addressed</h4>
+                  {gapData?.gaps?.length > 0 ? (
+                    <div className="flex flex-col gap-3">
+                      {gapData.gaps.map((gapStr, idx) => (
+                        <div key={idx} className="bg-orange-50/50 p-3 rounded-xl border border-orange-100 text-sm text-slate-700 flex items-start gap-2 shadow-sm">
+                          <Target className="w-4 h-4 text-orange-500 mt-0.5 shrink-0" />
+                          <p>{gapStr}</p>
+                        </div>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="h-24 flex items-center justify-center text-sm text-orange-400/70 bg-orange-50/50 border border-dashed border-orange-200 rounded-xl">
+                      Gap frequency metrics unavailable
+                    </div>
+                  )}
                 </div>
-              )}
+              </div>
             </div>
 
             {/* SECTION 3: Research Gaps (LLM Sentences) */}
-            <div className="bg-white border border-gray-200 rounded-xl p-6 shadow-sm">
+            <div className="glass-card p-6 animate-slide-up delay-300 mb-8 lg:mb-0">
               <div className="flex items-center gap-3 mb-4">
-                 <div className="p-2 bg-emerald-50 rounded text-emerald-700">
+                 <div className="p-2 bg-emerald-50 rounded text-emerald-600">
                   <Lightbulb size={20} />
                 </div>
-                <h3 className="text-lg font-semibold text-gray-900 tracking-tight">Research Gaps</h3>
+                <h3 className="text-lg font-bold text-gray-900 tracking-tight">Research Gaps</h3>
               </div>
               <p className="text-sm text-gray-500 mb-4">
                 AI-identified gaps and underexplored areas in this domain.
@@ -441,7 +485,12 @@ export default function ResultsPage() {
                   ))}
                 </div>
               ) : (
-                <div className="text-slate-400 text-sm">No significant gaps identified.</div>
+                <div className="h-24 flex items-center justify-center text-sm text-emerald-500/70 bg-emerald-50/50 border border-dashed border-emerald-200 rounded-xl">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                    No significant gaps identified
+                  </div>
+                </div>
               )}
             </div>
 
@@ -460,6 +509,7 @@ export default function ResultsPage() {
           onClose={() => setAnalysisPaper(null)}
         />
       )}
+      </div>
     </div>
   );
 }

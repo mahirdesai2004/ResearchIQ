@@ -98,3 +98,36 @@ def score_and_filter(papers, query_terms, term_freq=None):
         print("  ---")
 
     return results
+
+
+def rank_papers(papers, query: str, limit: int = 20):
+    """
+    Rank papers by composite score:
+      score = (citation_norm * 0.5) + (recency * 0.3) + (relevance * 0.2)
+    """
+    from datetime import datetime
+    current_year = datetime.now().year
+    query_terms = [t.lower() for t in query.split() if len(t) > 2]
+
+    scored = []
+    for p in papers:
+        # Citation score: normalize to [0, 1], cap at 500
+        cites = getattr(p, 'citation_count', 0) or 0
+        citation_norm = min(cites, 500) / 500.0
+
+        # Recency score: linear scale [0, 1] over 10 years
+        year = p.year or 2020
+        recency = max(0.0, min(1.0, (year - (current_year - 10)) / 10.0))
+
+        # Relevance score: fraction of query terms found
+        text = ((p.title or "") + " " + (p.abstract or "")).lower()
+        if query_terms:
+            relevance = sum(1 for t in query_terms if t in text) / len(query_terms)
+        else:
+            relevance = 0.5
+
+        score = (citation_norm * 0.5) + (recency * 0.3) + (relevance * 0.2)
+        scored.append((p, round(score, 4)))
+
+    scored.sort(key=lambda x: x[1], reverse=True)
+    return [(p, s) for p, s in scored[:limit]]

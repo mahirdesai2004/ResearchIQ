@@ -20,8 +20,8 @@ export default function PaperList({ papers, loading, mode = 'deep dive', emptyMe
 
   if (!papers || papers.length === 0) {
     return (
-      <div className="bg-white border border-gray-100 rounded-xl p-12 text-center text-slate-500 shadow-sm">
-        <FileText size={48} className="mx-auto text-slate-300 mb-4" />
+      <div className="glass-card p-12 text-center text-slate-500 animate-slide-up">
+        <FileText size={48} className="mx-auto text-slate-300 mb-4 animate-float" />
         <p className="text-lg">{emptyMessage}</p>
       </div>
     );
@@ -42,13 +42,13 @@ export default function PaperList({ papers, loading, mode = 'deep dive', emptyMe
       : paperAbstract;
 
     return (
-      <div key={paper.id || paperTitle} className={`bg-white border border-gray-200 rounded-xl p-6 shadow-sm hover:border-gray-300 hover:shadow transition-all duration-150 ${isCard ? 'flex flex-col h-full' : 'mb-4'}`}>
+      <div key={paper.id || paperTitle} className={`glass-card p-6 border-orange-100/50 hover:border-orange-200 hover:shadow-xl hover:-translate-y-1 transition-all duration-300 animate-slide-up bg-white/80 ${isCard ? 'flex flex-col h-full' : 'mb-4'}`}>
         <div className="flex items-start justify-between gap-3 mb-3">
-          <h3 className="text-lg font-semibold text-gray-900 leading-tight">
+          <h3 className="text-lg font-bold text-gray-900 leading-tight">
             {paperTitle}
           </h3>
           {paperScore > 0 && (
-            <div className="flex-shrink-0 bg-blue-50 text-blue-700 text-xs font-medium px-2.5 py-1 rounded flex items-center gap-1.5" title="Confidence Score">
+            <div className="flex-shrink-0 bg-orange-50 text-orange-600 border border-orange-100/50 text-xs font-medium px-2.5 py-1 rounded flex items-center gap-1.5" title="Confidence Score">
               <Activity size={12} />
               {Math.round(paperScore)}% Match
             </div>
@@ -96,8 +96,8 @@ export default function PaperList({ papers, loading, mode = 'deep dive', emptyMe
           {/* Paper links */}
           <div className="flex gap-3">
             {paperArxivUrl && (
-              <a href={paperArxivUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors">
-                <ExternalLink size={14} /> arXiv
+              <a href={paperArxivUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-orange-600 hover:text-orange-700 transition-colors">
+                <ExternalLink size={14} /> Link
               </a>
             )}
             {paperPdfUrl && (
@@ -142,17 +142,17 @@ export default function PaperList({ papers, loading, mode = 'deep dive', emptyMe
     papers.forEach(p => {
       const y = p.year || 'Unknown';
       if (!byYear[y]) byYear[y] = [];
-      byYear[y].append ? byYear[y].push(p) : byYear[y].push(p);
+      byYear[y].push(p);
     });
     
     return (
-      <div className="space-y-8">
+      <div className="space-y-8 animate-slide-up">
         {Object.keys(byYear).sort((a,b) => b - a).map(year => (
           <div key={year} className="relative">
-            <div className="sticky top-0 bg-slate-50 border-y border-slate-200 py-2 px-4 mb-4 z-10 flex items-center gap-2 text-slate-800 font-bold rounded shadow-sm">
-              <Calendar size={18} className="text-blue-500" /> year {year}
+            <div className="sticky top-0 bg-white/90 backdrop-blur-md border border-orange-100 py-2 px-4 mb-4 z-10 flex items-center gap-2 text-slate-800 font-bold rounded shadow-sm">
+              <Calendar size={18} className="text-purple-500" /> year {year}
             </div>
-            <div className="space-y-4 pl-4 border-l-2 border-slate-100 ml-4">
+            <div className="space-y-4 pl-4 border-l-2 border-orange-100/50 ml-4">
               {byYear[year].map((p, i) => renderPaper(p, false))}
             </div>
           </div>

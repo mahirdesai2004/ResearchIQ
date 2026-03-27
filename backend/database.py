@@ -1,6 +1,6 @@
 import os
 from datetime import datetime
-from sqlalchemy import create_engine, Column, String, Text, Integer, JSON, DateTime, Date
+from sqlalchemy import create_engine, Column, String, Text, Integer, JSON, DateTime, Date, text
 from sqlalchemy.orm import declarative_base, sessionmaker
 
 # Ensure data directory exists
@@ -22,17 +22,26 @@ class PaperModel(Base):
     title = Column(Text, nullable=False)
     abstract = Column(Text, nullable=False)
     authors = Column(JSON, nullable=False)
-    published = Column(Date, nullable=False)
+    published = Column(Date, nullable=True)
     year = Column(Integer, index=True, nullable=False)
     source = Column(String, default="arxiv", nullable=False)
     domains = Column(JSON, nullable=False, index=True)
     keywords = Column(JSON, nullable=False, index=True)
     summary = Column(Text, nullable=True)
+    citation_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 # Create tables
 Base.metadata.create_all(bind=engine)
+
+# Migration: add citation_count column if missing (for existing DBs)
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE papers ADD COLUMN citation_count INTEGER DEFAULT 0"))
+        conn.commit()
+except Exception:
+    pass  # Column already exists
 
 def get_db():
     db = SessionLocal()
