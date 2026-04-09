@@ -1,3 +1,5 @@
+--extra-index-url https://download.pytorch.org/whl/cpu
+torch==2.2.2+cpu
 fastapi==0.110.0
 uvicorn==0.29.0
 sqlalchemy==2.0.29
