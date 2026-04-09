@@ -14,6 +14,7 @@ langchain-google-genai==2.1.4
 # Vector + NLP
 sentence-transformers==2.7.0
 faiss-cpu==1.8.0
+numpy==1.26.4
 nltk
 
 # Data + APIs
