@@ -30,7 +30,6 @@ from llm_layer import ( # pyre-ignore
     generate_gap_sentences
 )
 from ranking import strict_filter, score_and_filter, compute_term_frequencies # pyre-ignore
-from embeddings import build_index, semantic_search # pyre-ignore
 from chat_engine import chat_with_papers, clear_session # pyre-ignore
 
 # Initialize DB tables
