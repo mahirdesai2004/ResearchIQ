@@ -28,6 +28,8 @@ class PaperModel(Base):
     domains = Column(JSON, nullable=False, index=True)
     keywords = Column(JSON, nullable=False, index=True)
     summary = Column(Text, nullable=True)
+    url = Column(String, nullable=True)
+    pdf_url = Column(String, nullable=True)
     citation_count = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
@@ -42,6 +44,21 @@ try:
         conn.commit()
 except Exception:
     pass  # Column already exists
+
+# Migration: add url columns
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE papers ADD COLUMN url VARCHAR"))
+        conn.commit()
+except Exception:
+    pass
+
+try:
+    with engine.connect() as conn:
+        conn.execute(text("ALTER TABLE papers ADD COLUMN pdf_url VARCHAR"))
+        conn.commit()
+except Exception:
+    pass
 
 def get_db():
     db = SessionLocal()

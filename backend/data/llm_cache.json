@@ -1,0 +1,158 @@
+{
+  "parse_query_machine learning": {
+    "core_terms": [
+      "machine learning"
+    ],
+    "context_terms": [],
+    "domain": "Artificial Intelligence",
+    "intent": "Explore topic",
+    "must_have": [],
+    "avoid": []
+  },
+  "summary_machine learning_2512.11133v1,2211.16782v1,2602.16352v1,2004.04686v1,1906.06821v2": "Machine learning employs algorithms that learn from data to identify patterns and make predictions or decisions without explicit programming, experiencing rapid development and widespread application across various fields.",
+  "parse_query_ml": {
+    "core_terms": [
+      "ml"
+    ],
+    "context_terms": [],
+    "domain": "Machine Learning",
+    "intent": "Information retrieval about Machine Learning",
+    "must_have": [],
+    "avoid": []
+  },
+  "summary_ml_1805.05052v17,2411.05856v1,1811.07216v2,2409.04365v1,2502.16184v2": "Machine learning (ML) has become a ubiquitous commodity, routinely integrated into daily life through applications like smartphone suggestions and guidance. There is growing interest in applying ML methods",
+  "litreview_ml_1802.03417v1,1811.04854v1,1810.10862v4,1901.11184v1,1902.03271v1,2009.13250v1,2004.04686v1,2001.09464v1,2004.14035v1,2108.02618v1": {
+    "summary": "The provided literature offers a comprehensive overview of Machine Learning (ML) and Artificial Intelligence (AI), spanning their diverse applications, conceptual underpinnings, and critical challenges. Papers explore practical implementations in areas such as mobile agent location, clinical diagnosis (oncology, sepsis), and cybersecurity, often emphasizing the need for robust data and real-time performance. A significant focus is placed on the ethical and societal dimensions, including human-centered design, explainability (XAI), assurance, and understanding failure modes in complex, multiparty systems. The collection also addresses the fundamental relationship between ML and AI, and future directions, notably the potential and challenges of Quantum AI.",
+    "key_themes": [
+      "Diverse applications and practical implementation of ML/AI",
+      "Ethical considerations, human-centered design, and explainability in AI",
+      "Assurance, reliability, and failure modes of AI/ML systems",
+      "Conceptual understanding and future frontiers like Quantum AI"
+    ],
+    "open_questions": [
+      "How can ML/AI systems consistently achieve optimal and assured performance in critical real-world applications like clinical diagnosis?",
+      "What are the most effective strategies for integrating human values and ensuring explainability in complex AI systems to build trust?",
+      "What major breakthroughs are needed in quantum computing to significantly accelerate the machine learning pipeline and realize Quantum AI?"
+    ]
+  },
+  "summary_agiot_1801.05667v1,1810.07007v1,1810.06018v1,1809.04797v1,1804.01396v1": "The provided papers do not discuss the topic of \"agiot.\" Instead, they explore various facets of artificial intelligence, including the concept of innateness in AI and efforts to reduce innate machinery. Other papers introduce novel architectures like \"tentacular artificial intelligence,\" a distributed multi-agent system, and examine AI's application in government, public sector, and health, as well as its historical development and focus on intelligent agents that perceive environments.",
+  "litreview_agiot_1812.04814v1,1809.07842v1,1812.02953v1,1812.00622v1,1809.05762v1,1810.02689v2,1803.05181v5,1801.05667v1,1802.04451v2,1810.06018v1": {
+    "summary": "This literature review synthesizes various perspectives on Artificial Intelligence, encompassing its foundational principles, ethical considerations, and diverse applications. A central theme is the imperative for responsible AI development, addressing issues such as bias amplification and the integration of ethical frameworks, particularly in sensitive domains like public sector decision-making, cybersecurity, and regulatory compliance. The papers also explore AI's practical utility in areas such as healthcare interventions and its synergy with emerging technologies like blockchain, alongside discussions on fundamental AI capabilities and learning mechanisms.",
+    "key_themes": [
+      "Ethical AI, Bias Mitigation, and Responsible Development",
+      "Diverse Applications and Societal Impact of AI",
+      "AI in Public Sector and Regulatory Compliance",
+      "Foundational AI Concepts and Advanced Systems",
+      "Intersections of AI with Emerging Technologies"
+    ],
+    "open_questions": [
+      "How can ethical principles and bias mitigation strategies be effectively integrated into the entire AI lifecycle, from design to deployment and continuous monitoring?",
+      "What are the long-term societal impacts and governance challenges of deploying AI in critical public sector decisions and sensitive applications like healthcare?",
+      "How can the explainability and transparency of complex AI systems be enhanced to foster trust and accountability, especially in regulated environments?"
+    ]
+  },
+  "parse_query_smart agriculture": {
+    "core_terms": [
+      "smart agriculture"
+    ],
+    "context_terms": [],
+    "domain": "Agriculture",
+    "intent": "Explore topic",
+    "must_have": [],
+    "avoid": []
+  },
+  "summary_smart agriculture_2302.08054v1": "The provided paper, \"Spectral 3D Computer Vision -- A Review,\" focuses exclusively on the technical aspects of spectral 3D computer vision. It details",
+  "litreview_smart agriculture_2004.04504v1,2502.16950v1,2601.22732v1,2512.22239v1,2512.18604v1,2512.18596v1,2512.14971v1,2511.19103v1,2511.12492v1,2511.00269v1": {
+    "summary": "The reviewed literature showcases a strong emphasis on leveraging advanced computational techniques, including deep learning, computer vision, and reinforcement learning, to revolutionize smart agriculture. Key themes revolve around enhancing efficiency in various agricultural processes, from pest control and farm coverage to data communication and model training. Papers explore innovative solutions such as lightweight AI models, optimized sensor networks, UAV-based automation, and privacy-preserving federated learning, all contributing to the development of more sustainable, efficient, and intelligent farming systems.",
+    "key_themes": [
+      "AI and Computer Vision Applications",
+      "UAV-based Automation and Multi-Agent Systems",
+      "Optimizing IoT and Sensor Network Connectivity",
+      "Efficiency and Resource Optimization",
+      "Data Management and Privacy in AI"
+    ],
+    "open_questions": [
+      "How can the integration of diverse smart agriculture technologies (e.g., UAVs, IoT, AI) be standardized and scaled for broader adoption across different farm types and sizes?",
+      "What are the long-term economic and environmental impacts of these advanced smart agriculture solutions, and how can their sustainability be rigorously evaluated?",
+      "How can the robustness and explainability of AI models in smart agriculture be improved to handle real-world variability and build trust among farmers?"
+    ]
+  },
+  "parse_query_protein coagulation": {
+    "core_terms": [
+      "protein",
+      "coagulation"
+    ],
+    "context_terms": [],
+    "domain": "Biochemistry",
+    "intent": "Understand phenomenon",
+    "must_have": [],
+    "avoid": []
+  },
+  "litreview_protein coagulation_2010.08162v2,2409.13057v2,2505.20354v4,2209.12624v1,1803.04479v1,2012.08275v1,2308.02796v1,2509.17208v2,2002.06053v1": {
+    "summary": "The provided literature primarily explores advanced computational methodologies, including machine learning (ML), natural language processing (NLP), and molecular dynamics (MD), for understanding protein structures, interactions, and drug discovery. While none of the papers directly address protein coagulation, their presented techniques offer powerful tools for investigating the underlying mechanisms of protein denaturation, aggregation, and interaction dynamics that are fundamental to coagulation processes. These methods could be instrumental in predicting protein stability, identifying modulators of coagulation, or analyzing vast textual data related to protein behavior.",
+    "key_themes": [
+      "Machine Learning for Protein Structure and Dynamics Analysis",
+      "Molecular Dynamics Simulations Enhanced by AI for Protein Behavior",
+      "Natural Language Processing for Protein Information Extraction and Chemical Space Exploration",
+      "High-Throughput Screening Optimization with Machine Learning for Drug Discovery",
+      "Development of All-Atom Protein Structure Datasets for Machine Learning"
+    ],
+    "open_questions": [
+      "How can the advanced ML and MD simulation techniques described be specifically adapted to model the complex, multi-scale processes of protein denaturation and aggregation that characterize coagulation?",
+      "What novel insights into the molecular mechanisms and modulators of protein coagulation could be derived by applying NLP methods to analyze the vast scientific literature on protein stability and interaction?",
+      "How can high-throughput screening, augmented by machine learning, efficiently identify and optimize compounds that specifically target and modulate protein coagulation pathways for therapeutic or industrial applications?"
+    ]
+  },
+  "summary_protein coagulation_2509.17208v2,2505.20354v4,2409.13057v2,2308.02796v1,2209.12624v1": "The provided research papers do not contain information pertaining to the topic of protein coagulation. Instead, they focus on diverse applications of artificial intelligence and machine learning, including",
+  "parse_query_mental health disorders": {
+    "core_terms": [
+      "mental health disorders"
+    ],
+    "context_terms": [],
+    "domain": "Mental Health",
+    "intent": "Understand",
+    "must_have": [],
+    "avoid": []
+  },
+  "litreview_mental health disorders_2411.09821v4,2510.16708v2,1803.05181v5,2402.01668v1,2212.00414v1,2004.12059v2,1907.11882v6,2412.07415v1,2003.01271v2,2110.15803v3": {
+    "summary": "The literature demonstrates a growing application of artificial intelligence (AI) and machine learning (ML) in addressing mental health disorders and related neurodevelopmental conditions. Studies explore AI-assisted intervention technologies for conditions like Autism Spectrum Disorder and utilize machine learning algorithms for detecting mental stress in specific populations. While some papers focus on general AI architectures for mobile healthcare or natural language processing for electronic health records, these technologies offer significant potential for enhancing mental health diagnosis, intervention, and data analysis. The broader trend indicates a move towards leveraging advanced computational methods for improved understanding and management of mental well-being.",
+    "key_themes": [
+      "AI/ML for diagnosis and intervention in neurodevelopmental disorders (e.g., Autism)",
+      "Machine learning for detecting and monitoring mental stress",
+      "Integration of AI/ML/NLP into broader healthcare systems for mental health data",
+      "Potential for early detection and personalized mental health support through AI"
+    ],
+    "open_questions": [
+      "What are the specific challenges and ethical considerations in deploying AI-assisted interventions for a wider range of mental health disorders?",
+      "How can AI/ML models be validated and made robust for diverse populations and real-world mental health contexts?",
+      "What is the optimal architecture for integrating AI into mobile healthcare systems to provide effective and accessible mental health support?"
+    ]
+  },
+  "summary_agiot_057777afe00d00559cc1a49005bc93a6d871ec26,5671c31711cb1db7263dc6c1684123aa5bc3a1bb,256a507eeff10ff08570ba10e316286d4c7b4174,a2b05240b9e2f91b717073c5fd282277d1922cea,41f8aad7b9f7f53a0dcaafaeeb67594351c1d336": "The provided research papers focus on mental health disorders, their screening, and the impact of the COVID-19 pandemic, including a systematic review and studies",
+  "summary_multilingual nlp_2601.05091v1,2602.23940v1,2602.00613v1,2602.23388v1,2603.03508v1": "Multilingual NLP research primarily addresses the challenges of low-resource languages and code-mixed content, such as Hinglish, often leveraging transformer-based models. Studies",
+  "summary_devsecops_7aaf89e37149a62c3507b1e90503e04cf3d5253d,dd49efc98fea499115843bba20e371e1e872d587,d4f605c891162f6db9dfae96f3fcbd63b2542d4e,4ccd26f30328e4ae2535d15de0da924b7ad2f3a2,17c5bd6cb178d41d828de637e1a19995b7fff6e6": "DevSecOps represents a critical paradigm shift, integrating security practices directly and seamlessly into the DevOps pipeline from the earliest stages of the development lifecycle. This approach is a crucial defense strategy against escalating cyber threats, particularly vital for secure and scalable service-oriented architectures in cloud-native systems. Current research highlights the use of AI-augmented frameworks integrating machine learning, the application of Zero Trust principles, and extensive threat modeling to enhance cloud-native DevSecOps.",
+  "gaps_fraud detection_W2282288858,W2756359217,W2772947247,W2779931100,W2945876440,W2786577118,W3125484369,W2160150610,W1517113043,W2085766370": [
+    "Limited domain-specific research",
+    "Need for larger datasets"
+  ],
+  "litreview_suicide prevention_W3024260923,10.1002/9781119146841.ch1,W3013996241,W3012352458,W3011492654,W3009820633,W3022882777,74276a37bfa50f90dfae37f767b2b67784bd402a,6e85986ae8be588f9386f8e5a8cf126e28467edd,da2611f965de031089d63048d0f27750ddb03b9d": {
+    "summary": "This topic has been analyzed using available research data. Key findings indicate important trends and ongoing developments in this domain.",
+    "gaps": [
+      "Limited domain-specific research",
+      "Need for larger datasets"
+    ],
+    "insights": [
+      "Growing interest in topic",
+      "Emerging interdisciplinary applications"
+    ],
+    "key_themes": [
+      "Emerging methods",
+      "Cross-domain applications",
+      "Performance optimization"
+    ],
+    "open_questions": [
+      "How can these methods scale?",
+      "What are the real-world deployment constraints?"
+    ]
+  }
+}

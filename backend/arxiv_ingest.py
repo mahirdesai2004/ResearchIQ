@@ -10,21 +10,19 @@ import requests
 logger = logging.getLogger(__name__)
 
 import threading
-import time as _time
+import time
 
-# Global S2 rate limiter: enforces 1.1s minimum gap between API calls
-_s2_lock = threading.Lock()
-_s2_last_call = 0.0
+LAST_CALL = 0
+_rate_lock = threading.Lock()
 
-def _rate_limit_s2():
-    """Wait if needed to respect S2 rate limit (1 req/sec)."""
-    global _s2_last_call
-    with _s2_lock:
-        now = _time.monotonic()
-        elapsed = now - _s2_last_call
-        if elapsed < 1.1:
-            _time.sleep(1.1 - elapsed)
-        _s2_last_call = _time.monotonic()
+def rate_limited_call():
+    """Exact global rate limiter block as specified by user."""
+    global LAST_CALL
+    with _rate_lock:
+        now = time.time()
+        if now - LAST_CALL < 1.2:
+            time.sleep(1.2 - (now - LAST_CALL))
+        LAST_CALL = time.time()
 
 S2_KEYS = [k.strip() for k in os.environ.get("S2_API_KEYS", "").split(",") if k.strip()]
 _s2_idx = 0
@@ -52,14 +50,14 @@ def ingest_quick_s2(topic: str, max_results: int = 40):
     params = {
         "query": topic,
         "limit": max_results,
-        "fields": "title,abstract,authors,year,publicationDate,externalIds,citationCount"
+        "fields": "title,abstract,authors,year,publicationDate,externalIds,citationCount,openAccessPdf"
     }
 
     # Exponential backoff: 3 retries (2s, 4s, 8s) with rate limiting
     results = []
     for attempt in range(3):
         try:
-            _rate_limit_s2()
+            rate_limited_call()
             response = requests.get(url, params=params, headers=get_s2_headers(), timeout=15)
             if response.status_code == 200:
                 data = response.json()
@@ -110,6 +108,9 @@ def ingest_quick_s2(topic: str, max_results: int = 40):
         if not keywords:
             keywords = [w.lower() for w in title.split() if len(w) > 3][:3]
 
+        paper_url = f"https://www.semanticscholar.org/paper/{entry_id}"
+        pdf_url = result.get("openAccessPdf", {}).get("url") if result.get("openAccessPdf") else None
+
         paper = PaperModel(
             id=entry_id,
             title=title,
@@ -121,6 +122,8 @@ def ingest_quick_s2(topic: str, max_results: int = 40):
             domains=[topic],
             keywords=keywords,
             summary=None,
+            url=paper_url,
+            pdf_url=pdf_url,
             citation_count=citation_count
         )
 
@@ -170,7 +173,9 @@ def fetch_openalex(topic: str, max_results: int = 15):
                     "authors": authors,
                     "year": pub_year,
                     "source": "openalex",
-                    "citation_count": item.get("cited_by_count", 0)
+                    "citation_count": item.get("cited_by_count", 0),
+                    "url": item.get("id"),
+                    "pdf_url": item.get("primary_location", {}).get("pdf_url")
                 })
     except Exception as e:
         logger.warning(f"OpenAlex fetch error: {e}")
@@ -179,7 +184,7 @@ def fetch_openalex(topic: str, max_results: int = 15):
 
 def fetch_crossref(topic: str, max_results: int = 15):
     """Absolute backstop fetcher using CrossRef API"""
-    url = f"https://api.crossref.org/works?query={topic}&select=title,abstract,author,published,DOI,is-referenced-by-count&rows={max_results}"
+    url = f"https://api.crossref.org/works?query={topic}&select=title,abstract,author,published,DOI,is-referenced-by-count,URL,link&rows={max_results}"
     results = []
     try:
         response = requests.get(url, timeout=12)
@@ -207,6 +212,8 @@ def fetch_crossref(topic: str, max_results: int = 15):
                 # Use a timestamp if DOI is missing
                 import time
                 doi = item.get("DOI", str(time.time()).replace('.',''))
+                crossref_url = item.get("URL") or f"https://doi.org/{doi}"
+                pdf_link = next((x.get("URL") for x in item.get("link", []) if x.get("content-type") == "application/pdf"), None)
                 
                 results.append({
                     "id": doi,
@@ -215,7 +222,9 @@ def fetch_crossref(topic: str, max_results: int = 15):
                     "authors": authors,
                     "year": pub_year,
                     "source": "crossref",
-                    "citation_count": item.get("is-referenced-by-count", 0)
+                    "citation_count": item.get("is-referenced-by-count", 0),
+                    "url": crossref_url,
+                    "pdf_url": pdf_link
                 })
     except Exception as e:
         logger.warning(f"CrossRef fetch error: {e}")

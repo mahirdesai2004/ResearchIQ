@@ -367,14 +367,14 @@ export default function ResultsPage() {
               
               <div className="space-y-3">
                 <button 
-                  onClick={() => triggerCSVDownload(`http://127.0.0.1:8000/export/tableau-data?domain=${encodeURIComponent(query)}`, "researchIQ_papers.csv")}
+                  onClick={() => triggerCSVDownload(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/export/tableau-data?domain=${encodeURIComponent(query)}`, "researchIQ_papers.csv")}
                   className="w-full flex items-center justify-center gap-2 bg-gradient-to-r from-slate-800 to-slate-900 text-white hover:from-slate-700 hover:to-slate-800 py-2.5 px-4 rounded-md font-medium transition-all duration-300 hover:shadow-lg cursor-pointer shadow-sm hover:-translate-y-0.5"
                 >
                   <Download size={16} />
                   Raw Data (All Papers)
                 </button>
                 <button
-                  onClick={() => triggerCSVDownload(`http://127.0.0.1:8000/export/tableau-aggregates`, "researchIQ_aggregates.csv")}
+                  onClick={() => triggerCSVDownload(`${import.meta.env.VITE_API_URL || 'http://127.0.0.1:8000'}/export/tableau-aggregates`, "researchIQ_aggregates.csv")}
                   className="w-full flex items-center justify-center gap-2 bg-white text-gray-700 border border-gray-300 hover:bg-rose-50 hover:text-rose-700 hover:border-rose-200 py-2 px-4 rounded-md font-medium transition-all duration-300 cursor-pointer shadow-sm hover:-translate-y-0.5"
                 >
                   <Download size={16} />
@@ -406,8 +406,14 @@ export default function ResultsPage() {
                         dataKey="count" 
                         xAxisKey="year" 
                         color="#a855f7" 
+                        type={trendData.length === 1 ? "bar" : "area"}
                         onClick={handleChartClick}
                       />
+                      {trendData.length === 1 && (
+                        <div className="text-xs text-center text-purple-600 mt-2 font-medium bg-purple-50 py-1 rounded">
+                          Limited data available — showing approximate trends
+                        </div>
+                      )}
                       {loadingExplanation ? (
                         <div className="text-sm text-purple-400 mt-4 animate-pulse">Analyzing trend spike...</div>
                       ) : trendExplanation ? (

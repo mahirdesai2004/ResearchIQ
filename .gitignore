@@ -1,32 +1,19 @@
-# Environments
-.env
-.venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
-
 # Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# IDEs
-.idea/
-.vscode/
-
-# Database files (auto-generated)
+*.so
+.venv/
+venv/
+ENV/
 *.db
-
-# Temp logs
-backend_output.txt
-frontend_output.txt
+backend.log
+test_output.json
+*.env
+.env
+.env.*
 
 # Node
 node_modules/
 dist/
-
-# OS
 .DS_Store
-backend/data/*.db

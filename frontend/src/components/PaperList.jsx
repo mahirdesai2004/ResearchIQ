@@ -34,8 +34,8 @@ export default function PaperList({ papers, loading, mode = 'deep dive', emptyMe
     const paperAuthors = paper.authors || [];
     const paperScore = paper.score;
     const matchedKeywords = paper.matched_keywords || [];
-    const paperArxivUrl = paper.id ? `https://arxiv.org/abs/${paper.id}` : '';
-    const paperPdfUrl = paper.id ? `https://arxiv.org/pdf/${paper.id}` : '';
+    const paperUrl = paper.url || '';
+    const paperPdfUrl = paper.pdf_url || '';
 
     const shortAbstract = paperAbstract.length > 200 && isCard
       ? paperAbstract.substring(0, 200) + '...' 
@@ -95,16 +95,15 @@ export default function PaperList({ papers, loading, mode = 'deep dive', emptyMe
         <div className="flex items-center gap-3 mt-5 pt-4 border-t border-gray-100">
           {/* Paper links */}
           <div className="flex gap-3">
-            {paperArxivUrl && (
-              <a href={paperArxivUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-orange-600 hover:text-orange-700 transition-colors">
-                <ExternalLink size={14} /> Link
-              </a>
-            )}
-            {paperPdfUrl && (
-              <a href={paperPdfUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors">
+            {paperPdfUrl ? (
+              <a href={paperPdfUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-orange-600 hover:text-orange-700 transition-colors">
                 <FileDown size={14} /> PDF
               </a>
-            )}
+            ) : paperUrl ? (
+              <a href={paperUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors">
+                <ExternalLink size={14} /> View Paper
+              </a>
+            ) : null}
           </div>
           
           {/* AI Action Buttons */}
