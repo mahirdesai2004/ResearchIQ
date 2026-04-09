@@ -3,13 +3,13 @@ uvicorn==0.29.0
 sqlalchemy==2.0.29
 python-multipart==0.0.9
 python-dotenv==1.0.1
+pydantic>=2.7.4,<3.0.0
 
-# LLM + LangChain (COMPATIBLE SET)
+# LLM + LangChain
 langchain==0.3.25
 langchain-core==0.3.58
 langchain-community==0.3.16
 langchain-google-genai==2.1.4
-google-generativeai==0.8.3
 
 # Vector + NLP
 sentence-transformers==2.7.0
@@ -19,6 +19,3 @@ nltk
 # Data + APIs
 requests
 arxiv==2.1.0
-
-# Core compatibility
-pydantic>=2.7.4,<3.0.0
