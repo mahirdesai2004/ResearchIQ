@@ -104,10 +104,14 @@ def rank_papers(papers, query: str, limit: int = 20):
     """
     Rank papers by composite score:
       score = (citation_norm * 0.5) + (recency * 0.3) + (relevance * 0.2)
+    
+    NOTE: Do NOT filter short terms — acronyms like 'vt', 'vf', 'ai', 'ml' matter.
     """
     from datetime import datetime
+    import re
     current_year = datetime.now().year
-    query_terms = [t.lower() for t in query.split() if len(t) > 2]
+    # Keep ALL query terms including short ones like "vt", "vf", "ai"
+    query_terms = [t.lower() for t in query.split() if t.strip()]
 
     scored = []
     for p in papers:
@@ -119,10 +123,14 @@ def rank_papers(papers, query: str, limit: int = 20):
         year = p.year or 2020
         recency = max(0.0, min(1.0, (year - (current_year - 10)) / 10.0))
 
-        # Relevance score: fraction of query terms found
+        # Relevance score: fraction of query terms found (with word boundary matching)
         text = ((p.title or "") + " " + (p.abstract or "")).lower()
         if query_terms:
-            relevance = sum(1 for t in query_terms if t in text) / len(query_terms)
+            matches = sum(
+                1 for t in query_terms
+                if re.search(r'\b' + re.escape(t) + r'\b', text)
+            )
+            relevance = matches / len(query_terms)
         else:
             relevance = 0.5
 
