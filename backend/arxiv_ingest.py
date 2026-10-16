@@ -231,19 +231,27 @@ def fetch_crossref(topic: str, max_results: int = 15):
 
 
 def score_paper(paper_data: dict, topic: str) -> int:
-    """Strict relevance scoring (+2 Title, +1 Abstract)"""
-    terms = [t.lower() for t in topic.split() if len(t) > 2]
+    """Strict relevance scoring (+2 Title, +1 Abstract).
+    
+    IMPORTANT: Do NOT filter short terms — medical/technical acronyms like
+    'vt', 'vf', 'ai', 'ml' must be scored. Only filter empty strings.
+    """
+    terms = [t.lower() for t in topic.split() if t.strip()]
     if not terms:
-        return 5 # Safe default if query is entirely short words
+        return 5  # Safe default for empty queries
         
     score = 0
     t_text = paper_data.get("title", "").lower()
     a_text = paper_data.get("abstract", "").lower()
     
+    import re
     for t in terms:
-        if t in t_text:
+        # Use word boundary matching for short terms to avoid false positives
+        # e.g., "vt" should NOT match "event" or "activity"
+        pattern = r'\b' + re.escape(t) + r'\b'
+        if re.search(pattern, t_text):
             score += 2
-        if t in a_text:
+        if re.search(pattern, a_text):
             score += 1
             
     return score
@@ -364,26 +372,54 @@ def ingest_by_year(topic: str, start_year=2018, end_year=2026):
 def ingest_quick(topic: str, max_results: int = 40):
     """
     Fast, single-batch ingestion for dynamically requested queries.
+    
+    IMPORTANT: Post-filters results so only papers actually about the topic
+    are saved to the DB. This prevents arXiv's broad keyword matching from
+    polluting the database with unrelated papers.
     """
+    import re
     client = arxiv.Client()
     db = SessionLocal()
     added_count = 0
+    skipped_irrelevant = 0
+
+    # Build arXiv query: try quoted phrase for multi-word topics, fall back to OR
+    terms = [t for t in topic.split() if t.strip()]
+    if len(terms) == 1:
+        arxiv_query = terms[0]
+    elif len(terms) <= 4:
+        # Try exact phrase first
+        arxiv_query = f'"{topic}"'
+    else:
+        # For long queries, OR the most important terms
+        arxiv_query = " OR ".join(f'"{t}"' for t in terms[:5])
 
     search = arxiv.Search(
-        query=topic,
+        query=arxiv_query,
         max_results=max_results,
-        sort_by=arxiv.SortCriterion.SubmittedDate
+        sort_by=arxiv.SortCriterion.Relevance  # Sort by relevance, not just date
     )
 
     try:
         results = list(client.results(search))
+        logger.info(f"arXiv returned {len(results)} results for query: {arxiv_query}")
     except Exception as e:
-        logger.warning(f"Quick arXiv fetch failed: {e}")
-        db.close()
-        return {"topic": topic, "fetched": 0, "added": 0}
+        logger.warning(f"Quick arXiv fetch failed with quoted query, trying plain: {e}")
+        # Fallback: plain topic without quotes
+        try:
+            search2 = arxiv.Search(query=topic, max_results=max_results)
+            results = list(client.results(search2))
+        except Exception as e2:
+            logger.warning(f"Quick arXiv fetch also failed with plain query: {e2}")
+            db.close()
+            return {"topic": topic, "fetched": 0, "added": 0}
 
     existing_ids = {row[0] for row in db.query(PaperModel.id).all()}
     new_papers = []
+    
+    # Pre-compute topic terms for relevance filtering
+    # Use ALL terms including short ones (vt, vf, ai, ml, etc.)
+    topic_terms = [t.lower() for t in topic.split() if t.strip()]
 
     for result in results:
         entry_id = result.entry_id.split("/")[-1] if result.entry_id else result.get_short_id()
@@ -395,6 +431,21 @@ def ingest_quick(topic: str, max_results: int = 40):
             title = "No title"
 
         abstract = (result.summary or "").replace("\n", " ").strip()
+        
+        # ── POST-FILTER: Only save papers that actually match the topic ──
+        # This is critical: arXiv returns papers based on broad OR matching,
+        # so we must verify the paper is actually about our topic before saving.
+        text = (title + " " + abstract).lower()
+        matching_terms = [
+            t for t in topic_terms
+            if re.search(r'\b' + re.escape(t) + r'\b', text)
+        ]
+        
+        if not matching_terms:
+            # Paper doesn't contain ANY query term — skip it
+            skipped_irrelevant += 1
+            continue
+        
         authors = [a.name for a in result.authors] if result.authors else []
         pub_year = result.published.year if result.published else datetime.now().year
         pub_date = result.published.date() if result.published else datetime.now().date()
@@ -426,7 +477,7 @@ def ingest_quick(topic: str, max_results: int = 40):
         db.bulk_save_objects(new_papers)
         db.commit()
 
-    logger.info(f"Quick ingested {len(new_papers)} papers for '{topic}'")
+    logger.info(f"Quick ingested {added_count} papers for '{topic}' (skipped {skipped_irrelevant} irrelevant from arXiv)")
     db.close()
     
     return {"topic": topic, "fetched": added_count, "added": added_count}
