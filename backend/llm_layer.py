@@ -107,21 +107,35 @@ def local_summary_fallback(prompt: str, is_json: bool = False):
 
 
 def call_gemini(prompt: str, max_tokens: int, temperature: float, response_mime_type: typing.Optional[str]):
-    client = get_gemini_client()
-    if not client:
+    if not _clients:
         raise RuntimeError("No Gemini Client")
-    kwargs = {"temperature": temperature, "max_output_tokens": max_tokens}
+        
+    kwargs = {
+        "temperature": temperature, 
+        "max_output_tokens": max_tokens,
+        "thinking_config": types.ThinkingConfig(thinking_budget=0)
+    }
     if response_mime_type:
         kwargs["response_mime_type"] = response_mime_type
         
-    response = client.models.generate_content(
-        model='gemini-2.5-flash',
-        contents=prompt,
-        config=types.GenerateContentConfig(**kwargs),
-    )
-    if response.text:
-        return response.text
-    raise RuntimeError("Empty response")
+    global _current_client_idx
+    last_err = None
+    for _ in range(len(_clients)):
+        client = _clients[_current_client_idx]
+        _current_client_idx = (_current_client_idx + 1) % len(_clients)
+        try:
+            response = client.models.generate_content(
+                model='gemini-2.5-flash',
+                contents=prompt,
+                config=types.GenerateContentConfig(**kwargs),
+            )
+            if response.text and response.text.strip():
+                return response.text
+        except Exception as e:
+            last_err = e
+            continue
+            
+    raise RuntimeError(f"All Gemini clients failed: {last_err}")
 
 
 def call_openrouter(prompt: str, max_tokens: int, temperature: float):
@@ -139,7 +153,7 @@ def call_openrouter(prompt: str, max_tokens: int, temperature: float):
         "max_tokens": max_tokens,
         "temperature": temperature
     }
-    res = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=15)
+    res = requests.post("https://openrouter.ai/api/v1/chat/completions", headers=headers, json=payload, timeout=5)
     if res.status_code == 200:
         data = res.json()
         if "choices" in data and data["choices"]:
@@ -226,7 +240,8 @@ Return ONLY indices (as a Python list of integers) like:
             contents=prompt,
             config=types.GenerateContentConfig(
                 temperature=0.0,
-                max_output_tokens=30,
+                max_output_tokens=100,
+                thinking_config=types.ThinkingConfig(thinking_budget=0)
             ),
         )
         import re
@@ -241,7 +256,6 @@ Return ONLY indices (as a Python list of integers) like:
                 indices = json.loads(match.group(0))
                 if isinstance(indices, list):
                     _LLM_CACHE[cache_key] = indices
-                    save_cache(_LLM_CACHE)
                     save_cache(_LLM_CACHE)
                     reranked = [candidates[i-1] for i in indices if 1 <= i <= len(candidates)]
                     if len(reranked) < 3:
@@ -289,7 +303,8 @@ YES or NO
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     temperature=0.0,
-                    max_output_tokens=10,
+                    max_output_tokens=30,
+                    thinking_config=types.ThinkingConfig(thinking_budget=0)
                 ),
             )
             ans = response.text.strip().upper()
@@ -462,7 +477,7 @@ def parse_query_llm(query: str) -> dict:
     """
 
     try:
-        content = _call_llm(prompt, max_tokens=150, temperature=0.0, response_mime_type="application/json")
+        content = _call_llm(prompt, max_tokens=300, temperature=0.0, response_mime_type="application/json")
         parsed = json.loads(content)
         
         # Fallback safety rule: MUST have core_terms

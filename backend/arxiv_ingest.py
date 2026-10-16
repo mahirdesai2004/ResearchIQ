@@ -58,16 +58,15 @@ def ingest_quick_s2(topic: str, max_results: int = 40):
     for attempt in range(3):
         try:
             rate_limited_call()
-            response = requests.get(url, params=params, headers=get_s2_headers(), timeout=15)
+            response = requests.get(url, params=params, headers=get_s2_headers(), timeout=5)
             if response.status_code == 200:
                 data = response.json()
                 results = data.get("data", [])
                 logger.info(f"S2 API success: {len(results)} papers for '{topic}'")
                 break
             elif response.status_code == 429:
-                wait = 2 ** (attempt + 1)  # 2s, 4s, 8s
-                logger.warning(f"S2 API 429 — retry {attempt+1}/3 in {wait}s")
-                time.sleep(wait)
+                logger.warning("S2 API 429 rate limit reached — failing fast to next provider")
+                break
             else:
                 logger.warning(f"S2 API error {response.status_code}: {response.text[:200]}")
                 break
@@ -339,7 +338,9 @@ def ingest_by_year(topic: str, start_year=2018, end_year=2026):
                 source="arxiv",
                 domains=[topic],
                 keywords=keywords,
-                summary=None
+                summary=None,
+                url=f"https://arxiv.org/abs/{entry_id}",
+                pdf_url=f"https://arxiv.org/pdf/{entry_id}.pdf"
             )
 
             new_papers.append(paper)
@@ -412,7 +413,9 @@ def ingest_quick(topic: str, max_results: int = 40):
             source="arxiv",
             domains=[topic],
             keywords=keywords,
-            summary=None
+            summary=None,
+            url=f"https://arxiv.org/abs/{entry_id}",
+            pdf_url=f"https://arxiv.org/pdf/{entry_id}.pdf"
         )
 
         new_papers.append(paper)

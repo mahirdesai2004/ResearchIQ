@@ -132,7 +132,7 @@ export default function ResultsPage() {
       // 2. Fetch keyword trend
       try {
         const trendRes = await getKeywordTrend(query);
-        if (Array.isArray(trendRes) && trendRes.length >= 3) {
+        if (Array.isArray(trendRes) && trendRes.length >= 1) {
           // It's already an array of {year, count} formatted properly
           setTrendData(trendRes.map(item => ({...item, year: String(item.year)})));
         } else {

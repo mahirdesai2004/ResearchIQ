@@ -135,24 +135,22 @@
     "Limited domain-specific research",
     "Need for larger datasets"
   ],
-  "litreview_suicide prevention_W3024260923,10.1002/9781119146841.ch1,W3013996241,W3012352458,W3011492654,W3009820633,W3022882777,74276a37bfa50f90dfae37f767b2b67784bd402a,6e85986ae8be588f9386f8e5a8cf126e28467edd,da2611f965de031089d63048d0f27750ddb03b9d": {
-    "summary": "This topic has been analyzed using available research data. Key findings indicate important trends and ongoing developments in this domain.",
-    "gaps": [
-      "Limited domain-specific research",
-      "Need for larger datasets"
+  "summary_agentic ai_W4413427262,W4412505619,W4411152359,W4406728221,W4409269467": "Agentic AI represents an emerging paradigm of autonomous systems designed to pursue complex goals with minimal human intervention, distinguishing itself from traditional AI and even general AI agents by its inherent autonomy. Research emphasizes the critical need to differentiate Agentic AI from AI Agents, offering conceptual taxonomies to clarify their distinct characteristics, applications, and challenges. This field is poised to transform various sectors, including healthcare, by overcoming the limitations of narrowly task-specific AI applications through its autonomous intelligence.",
+  "gaps_agentic ai_W4413427262,W4412505619,W4411152359,W4406728221,W4409269467": [
+    "While papers distinguish AI Agents from Agentic AI and survey Agentic AI's autonomous nature, there is a missing exploration of standardized, quantitative metrics to evaluate the 'minimal human intervention' aspect of Agentic AI, beyond conceptual definitions.",
+    "The application of Agentic AI in healthcare is mentioned as transformative, yet the papers lack specific methodologies or frameworks for mitigating inherent biases and managing data complexity within agentic systems in sensitive domains like healthcare, which are acknowledged challenges.",
+    "Despite the conceptual taxonomy and survey of Agentic AI, there is an under-explored area concerning the ethical implications and governance frameworks specifically tailored for autonomous, complex goal-pursuing Agentic AI, especially when operating with 'minimal human intervention' in real-world scenarios."
+  ],
+  "trend_agentic ai_2025_W4406728221,W4409269467,W4410197190,W4413780653,W4415603109": "Research on \"agentic AI\" surged in 2025 due to a confluence of factors, including significant advancements in large language models enabling more sophisticated reasoning and planning capabilities. This progress, coupled with growing industry interest in AI systems capable of autonomous goal achievement across various domains like healthcare and smart infrastructure, spurred a wave of research exploring their potential, limitations, and societal implications.",
+  "paper_explain_structured_W4413427262": "Explanation:\nImagine you have a super-smart computer program. This paper is trying to clear up confusion about two different ways these super-smart programs are being built, especially now that we have really powerful AI like ChatGPT.\n\nThink of it like this:\n\n*   **AI Agents** are like a very skilled personal assistant. You give them a specific job (like \"book me a flight to New York\" or \"summarize this document\"), and they use their tools (like a search engine, a calendar, or even other AI programs) to get it done. They are designed to be good at *one* type of task, and they follow your instructions. The paper says these are built using powerful language models (like ChatGPT) and image models to help them understand and complete tasks. They get better by learning to use more tools and by understanding your instructions better.\n\n*   **Agentic AI** (the paper cuts off before fully explaining it, but the implication is clear) is something much more advanced. While AI Agents are *given* tasks, Agentic AI is implied to be a system that might *decide* what tasks need to be done, or even set its own goals. It's a bigger, more independent way of thinking about AI.\n\nThe problem the paper is solving is that people are using these terms (\"AI Agents\" and \"Agentic AI\") interchangeably, but they actually refer to different concepts with different ways of being built and different capabilities. The paper wants to create a clear guide to distinguish between them, show what they're good for, and point out their strengths and weaknesses.\n\nHow the solution works (high-level):\nThe paper first defines what an \"AI Agent\" is, explaining that it's a system that uses powerful AI (like ChatGPT) to automate specific tasks. It then explains how these agents are built \u2013 by giving them tools, teaching them how to understand prompts, and improving their \"thinking\" abilities. It then starts to define \"Agentic AI\" as a completely different, more advanced approach, implying it's a shift from just doing tasks to potentially setting its own agenda. Essentially, it's creating a clear dictionary and map for these two types of AI to help everyone understand them better.\n\nResearch Gap:\n- The paper itself identifies a research gap by stating that there's a lack of clear distinction and a need for a \"structured, conceptual taxonomy\" between AI Agents and Agentic AI. This implies that the current understanding and terminology are muddled, hindering clear communication and development in the field.\n- The abstract cuts off before fully characterizing Agentic AI systems, indicating that a comprehensive understanding and definition of this more advanced paradigm is still developing and needs further elaboration.",
+  "parse_query_agentic ai": {
+    "core_terms": [
+      "agentic ai"
     ],
-    "insights": [
-      "Growing interest in topic",
-      "Emerging interdisciplinary applications"
-    ],
-    "key_themes": [
-      "Emerging methods",
-      "Cross-domain applications",
-      "Performance optimization"
-    ],
-    "open_questions": [
-      "How can these methods scale?",
-      "What are the real-world deployment constraints?"
-    ]
+    "context_terms": [],
+    "domain": "artificial intelligence",
+    "intent": "understand",
+    "must_have": [],
+    "avoid": []
   }
 }

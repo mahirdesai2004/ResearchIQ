@@ -278,8 +278,8 @@ def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
             "score": confidence,
             "id": p.id,
             "llm_reason": llm_reason,
-            "url": getattr(p, "url", None),
-            "pdf_url": getattr(p, "pdf_url", None)
+            "url": getattr(p, "url", None) or (f"https://arxiv.org/abs/{p.id}" if getattr(p, "source", "") == "arxiv" or str(p.id).replace('.','').isdigit() else None),
+            "pdf_url": getattr(p, "pdf_url", None) or (f"https://arxiv.org/pdf/{p.id}.pdf" if getattr(p, "source", "") == "arxiv" or str(p.id).replace('.','').isdigit() else None)
         })
 
     return {
@@ -404,6 +404,8 @@ async def upload_paper(file: UploadFile = File(...), db: Session = Depends(get_d
         "fallback": True,
         "parsed_query": {"core_terms": kw, "context_terms": []}
     }
+
+@app.post("/chat/query")
 def chat_query(req: ChatRequest):
     result = chat_with_papers(req.query, req.papers, req.session_id)
     return result
@@ -460,10 +462,37 @@ def keyword_trend(keyword: str):
         if re.search(r'\b' + re.escape(keyword_lower) + r'\b', text):
             data[year_val] += 1
             
-    db.close()
+    # If exact multi-word phrase yielded < 3 years, relax to individual terms > 2 chars
+    if len(data) < 3:
+        terms = [t for t in keyword_lower.split() if len(t) > 2]
+        if len(terms) > 1:
+            term_data: Dict[int, int] = defaultdict(int)
+            for p in papers:
+                if not p.year:
+                    continue
+                try:
+                    year_val = int(p.year)
+                except (ValueError, TypeError):
+                    continue
+                if year_val < 1950 or year_val > current_year + 1:
+                    continue
+                text = f"{p.title or ''} {p.abstract or ''}".lower()
+                if any(re.search(r'\b' + re.escape(t) + r'\b', text) for t in terms):
+                    term_data[year_val] += 1
+            if len(term_data) > len(data):
+                data = term_data
 
     if not data:
-        data[2023] = len(papers) if len(papers) > 0 else 1
+        for p in papers:
+            if p.year:
+                try:
+                    y = int(p.year)
+                    if 2018 <= y <= current_year + 1:
+                        data[y] += 1
+                except (ValueError, TypeError):
+                    pass
+
+    db.close()
 
     sorted_dict = dict(sorted(data.items()))
     return [{"year": k, "count": v} for k, v in sorted_dict.items()]
@@ -547,11 +576,11 @@ def trend_explanation(keyword: str = Query(...), db: Session = Depends(get_db)):
         if not p.year:
             continue
         text = f"{p.title or ''} {p.abstract or ''}".lower()
-        if keyword.lower() in text:
+        if keyword.lower() in text or any(t in text for t in keyword.lower().split() if len(t) > 2):
             data[p.year] += 1
     db_session.close()
 
-    if len(data) < 3:
+    if len(data) < 1:
         return {"keyword": keyword, "spike_year": None, "explanation": "Not enough data to explain trend for this topic."}
          
     spike_year = max(list(data.keys()), key=lambda y: data[y])
