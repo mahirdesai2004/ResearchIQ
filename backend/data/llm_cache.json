@@ -197,5 +197,47 @@
     "intent": "explain",
     "must_have": [],
     "avoid": []
-  }
+  },
+  "summary_vt vf detection_W2101318308,W4411949664,W4410358824,W7199920585,W2095428098": "Research in VT/VF detection primarily focuses on timely and accurate identification of these life-threatening arrhythmias to prevent sudden cardiac arrest. Current methods leverage advanced signal processing and deep learning techniques, including noise-aware deep ECG-based detection and lightweight, quality-aware detectors suitable for resource-constrained devices. Comparative evaluations of deep learning architectures for rhythm-level ECG data and sequential hypothesis testing algorithms are also being explored to enhance classification accuracy and reduce inappropriate shocks in implantable cardioverter-defibrillators.",
+  "litreview_vt vf detection_W2784202647,W4405907512,W2115776463,W4411949664,W2024580139,W4396979291,W2120494233,W102368704,W4410358824,W7199920585": {
+    "summary": "This literature review examines various approaches to Ventricular Tachycardia (VT) and Ventricular Fibrillation (VF) detection, highlighting advancements in ECG signal processing, artificial intelligence, and hardware-constrained solutions. Key themes include the development of robust algorithms for real-time detection, the integration of signal quality assessment to improve accuracy, and the design of energy-efficient on-sensor processors. Several papers focus on deep learning architectures and AI algorithms for enhanced classification, while others address the challenges of resource-constrained devices and the impact of noise on detection reliability. The review also touches upon the critical evaluation of detection algorithms and the importance of trustworthy monitoring.",
+    "key_themes": [
+      "Real-time VT/VF detection algorithms",
+      "ECG signal quality assessment and noise robustness",
+      "Deep learning and AI for arrhythmia classification",
+      "Resource-constrained and on-sensor device optimization",
+      "Comparative evaluation of detection methods"
+    ],
+    "open_questions": [
+      "How can the trade-off between computational complexity and detection accuracy be further optimized for ultra-low-power, on-sensor devices?",
+      "What are the most effective strategies for standardizing the evaluation and comparison of novel VT/VF detection algorithms across diverse datasets and clinical scenarios?",
+      "How can AI-driven VT/VF detection systems be made more transparent and interpretable to foster greater trust and adoption in clinical settings?"
+    ]
+  },
+  "gaps_vt vf detection_W2101318308,W4411949664,W4410358824,W7199920585,W2095428098,W4396979291,W4405907512,W2041403021,W2784202647,W2115229260": [
+    "While several papers focus on lightweight and resource-constrained VT/VF detection (e.g., \"Lightweight Electrocardiogram Signal Quality-Aware VT/VF Detector\" and \"A Simple Automated VT/VF Detection Method\"), there is a gap in exploring how these resource-efficient methods perform in real-world, long-term monitoring scenarios with varying patient activity and evolving signal quality issues beyond just initial noise awareness, and how their accuracy compares to more computationally intensive deep learning models in such dynamic environments.",
+    "Although \"Noise-Aware Deep ECG-Based VT/VF Detection Method\" and \"VT/VF Detection Method Based on ECG Signal Quality Assessment\" address noise and signal quality, there is an underexplored area in developing robust VT/VF detection algorithms that can effectively differentiate between complex, non-stationary artifacts (e.g., muscle tremors, lead disconnections during patient movement) and true arrhythmias, especially in the context of implantable devices or wearable monitors where artifact patterns can be highly variable and mimic VT/VF characteristics.",
+    "Despite papers discussing deep learning architectures for VT/VF classification (\"Comparative Evaluation of Deep Learning Architectures\") and AI algorithm accuracy in insertable cardiac monitors (\"ACCURACY OF AN ARTIFICIAL INTELLIGENCE ALGORITHM\"), there is a gap in comparative studies that systematically evaluate the performance of these advanced AI/deep learning models against established, rule-based or sequential hypothesis testing algorithms (like the one presented in \"Ventricular tachycardia and fibrillation detection by a sequential hypothesis testing algorithm\") specifically on their ability to reduce inappropriate shocks in primary prevention patients, as highlighted in \"Strategic Programming of Detection and Therapy Parameters in Implantable Cardioverter-Defibrillators Reduces Shocks in Primary Prevention Patients\", considering both sensitivity and specificity in a clinical outcome-focused manner."
+  ],
+  "litreview_parkinsons detection_2603.00060v1,2012.06563v1,2411.08013v2,2309.13292v1,2609.09499v1,1910.11509v4,1904.09651v6,W2799998149,W2617946485,W4401808866": {
+    "summary": "This literature review examines various approaches to Parkinson's disease detection, highlighting the diversity of methodologies employed. Techniques range from analyzing fMRI data with lightweight CNNs under data scarcity, exploring facial expressions and affective domains, and leveraging speech analysis with a focus on explainability and age-harmlessness. Other methods include cross-lingual speech representations, deep 1D-Convnet for gait analysis, and improved sex-specific and age-dependent classification models using handwriting measurements. Image processing and general classification systems also contribute to the detection landscape, with several papers focusing on performance analysis of these diverse techniques.",
+    "key_themes": [
+      "Multi-modal data sources (fMRI, facial expressions, speech, gait, handwriting, images)",
+      "Machine learning and deep learning approaches (CNNs, 1D-Convnet, classification models)",
+      "Addressing practical challenges (data scarcity, explainability, fairness, cross-lingual applicability)",
+      "Focus on early and accurate detection and severity prediction",
+      "Performance analysis and model improvement"
+    ],
+    "open_questions": [
+      "How can multi-modal approaches be more effectively integrated to improve detection accuracy and robustness across diverse patient populations?",
+      "What are the most promising avenues for developing truly explainable and interpretable AI models for Parkinson's detection that clinicians can trust?",
+      "How can the generalizability of detection models be enhanced to account for variations in demographics, disease progression, and data acquisition protocols across different clinical settings?"
+    ]
+  },
+  "summary_parkinsons detection_2603.00060v1,W4372272038,W4382407083,W4388831243": "Research in Parkinson's detection is exploring diverse methodologies, including deep learning approaches like lightweight CNNs for fMRI data, particularly in scenarios with extreme data scarcity. Another prominent trend involves machine learning techniques such as SVMs applied to vocal data for early identification. Furthermore, hybrid deep learning architectures combining ResNet and LSTM are being investigated, alongside methods utilizing tunable Q wavelet transforms with EEG signals to analyze physiological and neuronal behavior associated with the disease.",
+  "gaps_parkinsons detection_2603.00060v1,W4372272038,W4382407083,W4388831243": [
+    "While 'Learning Under Extreme Data Scarcity' addresses fMRI and 'SVM-BASED APPROACH' uses vocal data, and 'UTILISING TUNABLE Q WAVELET TRANSFORM METHOD' employs EEG signals, there is a gap in exploring the fusion of these diverse data modalities (fMRI, vocal, EEG) within a single model for Parkinson's detection to potentially leverage complementary information and improve robustness.",
+    "The 'SVM-BASED APPROACH' and 'Parkinsons detection based on combined ResNet architecture and LSTM' focus on model development, but a gap exists in the systematic investigation and comparison of explainable AI (XAI) techniques across these different modalities (vocal, fMRI, EEG) to provide clinical interpretability for the detection models, especially given the 'profound mind reproductions' mentioned for EEG.",
+    "Given that 'Learning Under Extreme Data Scarcity' highlights the challenges of limited and correlated data in neuroimaging, a gap remains in developing and evaluating robust few-shot or zero-shot learning techniques specifically tailored for the other modalities like vocal and EEG data, beyond just lightweight CNNs for fMRI, to address the inherent data scarcity often encountered in medical diagnostics for Parkinson's."
+  ]
 }
