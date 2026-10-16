@@ -91,136 +91,259 @@ def diversify(papers: list, num: int) -> list:
 
 @app.post("/research/query")
 def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
-    # 1. LLM Query Parser
+    """
+    Research query endpoint — completely rebuilt cascade for accurate relevance.
+    
+    Strategy:
+    1. Check if we already have domain-specific papers for this exact topic in DB
+    2. ALWAYS fetch fresh from arxiv (the gold standard for academic search)
+    3. If still need more: try S2, OpenAlex, CrossRef
+    4. Score & filter everything using the FULL original topic (including short acronyms like VT, VF, AI)
+    5. Only fall back to generic DB papers as absolute last resort
+    """
+    import re
+    from arxiv_ingest import score_paper, ingest_quick  # pyre-ignore
+
     parsed = parse_query_llm(req.topic)
-    source = "db"
+    source_parts = []
     is_fallback = False
 
-    core_query = " ".join(parsed.get("core_terms", [])) or req.topic
-    if len(core_query.split()) == 1:
-        MIN_MATCH = 1
-    else:
-        MIN_MATCH = 2
-        
-    def get_good_candidates(force_unfiltered=False):
-        all_p = db.query(PaperModel).all()
-        if force_unfiltered:
-            return all_p
-        from arxiv_ingest import score_paper  # pyre-ignore
-        scored = []
-        for p in all_p:
-            s_score = score_paper({"title": p.title, "abstract": p.abstract}, core_query)
-            if s_score >= MIN_MATCH:
-                scored.append((p, s_score))
-        scored.sort(key=lambda x: x[1], reverse=True)
-        return [p for p, _ in scored]
+    topic_lower = req.topic.lower().strip()
 
-    def save_dicts_to_db(dicts_list, p_source):
+    # ── Helper: score a paper against the FULL original topic ──────────────────
+    def score_against_topic(p) -> int:
+        return score_paper(
+            {"title": p.title or "", "abstract": p.abstract or ""},
+            req.topic   # use FULL original topic, not just core_query
+        )
+
+    # ── Helper: check if paper is relevant enough to return ────────────────────
+    def is_relevant(p, min_score: int = 1) -> bool:
+        return score_against_topic(p) >= min_score
+
+    # ── Helper: save external fetch results to DB ───────────────────────────────
+    def save_dicts_to_db(dicts_list, p_source: str) -> int:
         added = 0
         from keyword_extractor import extract_keywords  # pyre-ignore
         for d in dicts_list:
+            if not d.get("id") or not d.get("title"):
+                continue
             try:
-                if db.query(PaperModel).filter_by(id=d["id"]).first(): continue
-                kw = extract_keywords(d["title"]) or [w for w in d["title"].lower().split() if len(w)>3][:3]
+                if db.query(PaperModel).filter_by(id=d["id"]).first():
+                    continue
+                kw = extract_keywords(d["title"]) or [
+                    w for w in d["title"].lower().split() if len(w) > 3
+                ][:3]
                 pm = PaperModel(
-                    id=d["id"], title=d["title"], abstract=d.get("abstract", ""),
-                    authors=d.get("authors", []), year=d.get("year", 2024),
-                    source=p_source, published=None,
-                    domains=[req.topic], keywords=kw, citation_count=d.get("citation_count", 0),
-                    url=d.get("url"), pdf_url=d.get("pdf_url")
+                    id=d["id"],
+                    title=d["title"],
+                    abstract=d.get("abstract", ""),
+                    authors=d.get("authors", []),
+                    year=d.get("year", 2024),
+                    source=p_source,
+                    published=None,
+                    domains=[req.topic],
+                    keywords=kw,
+                    citation_count=d.get("citation_count", 0),
+                    url=d.get("url"),
+                    pdf_url=d.get("pdf_url")
                 )
                 db.add(pm)
                 added += 1
-            except Exception as e:
+            except Exception:
                 db.rollback()
-                continue
         try:
-            if added > 0: db.commit()
-        except:
+            if added > 0:
+                db.commit()
+        except Exception:
             db.rollback()
             added = 0
         return added
 
-    def _fetch_local():
-        return get_good_candidates(), "Local DB"
+    # ── STEP 1: Domain-aware local lookup ──────────────────────────────────────
+    # CRITICAL: Only return papers whose domain tag EXACTLY matches the current topic.
+    # Do NOT use score-based secondary matching here — that's what caused fraud detection
+    # papers to appear in cardiac/VT/VF queries (they both contain the word "detection").
+    # Papers from other domains will be fetched fresh from external APIs below.
+    local_papers = []
+    all_db_papers = db.query(PaperModel).all()
+    
+    for p in all_db_papers:
+        p_domains = [d.lower() for d in (p.domains or [])]
+        if topic_lower in p_domains:
+            local_papers.append(p)
 
-    def _fetch_s2(c, s):
-        if len(c) < req.num_papers:
-            try:
-                from arxiv_ingest import ingest_quick_s2  # pyre-ignore
-                if ingest_quick_s2(core_query, 30).get("added", 0) > 0:
-                    return get_good_candidates(), s + " + S2"
-            except Exception: pass
-        return c, s
+    if local_papers:
+        source_parts.append(f"Local DB ({len(local_papers)} domain-matched)")
+        logger.info(f"Found {len(local_papers)} domain-matched papers in local DB for '{req.topic}'")
 
-    def _fetch_openalex(c, s):
-        if len(c) < req.num_papers:
-            try:
-                from arxiv_ingest import fetch_openalex  # pyre-ignore
-                oa_results = fetch_openalex(core_query, 20)
-                if oa_results and save_dicts_to_db(oa_results, "openalex"):
-                    return get_good_candidates(), s + " + OpenAlex"
-            except Exception: pass
-        return c, s
+    # ── STEP 2: ALWAYS fetch fresh from arXiv ──────────────────────────────────
+    # arXiv is the authoritative source — never skip it for academic queries.
+    try:
+        logger.info(f"Fetching fresh from arXiv for: '{req.topic}'")
+        arxiv_result = ingest_quick(req.topic, max_results=40)
+        if arxiv_result.get("added", 0) > 0:
+            source_parts.append(f"arXiv (+{arxiv_result['added']})")
+            logger.info(f"arXiv added {arxiv_result['added']} new papers for '{req.topic}'")
+            # Re-query DB to include newly added papers with domain tag
+            newly_added = db.query(PaperModel).filter(
+                PaperModel.domains.contains([req.topic])
+            ).all()
+            # Merge without duplicates
+            existing_ids = {p.id for p in local_papers}
+            for p in newly_added:
+                if p.id not in existing_ids:
+                    local_papers.append(p)
+                    existing_ids.add(p.id)
+        else:
+            logger.info(f"arXiv: no new papers (already cached or API returned 0)")
+            # Still re-score DB in case we cached but domains didn't match
+            source_parts.append("arXiv (cached)")
+    except Exception as e:
+        logger.warning(f"arXiv fetch failed for '{req.topic}': {e}")
+        source_parts.append("arXiv (failed)")
 
-    def _fetch_crossref(c, s):
-        if len(c) < req.num_papers:
-            try:
-                from arxiv_ingest import fetch_crossref  # pyre-ignore
-                cr_results = fetch_crossref(core_query, 15)
-                if cr_results and save_dicts_to_db(cr_results, "crossref"):
-                    return get_good_candidates(), s + " + CrossRef"
-            except Exception: pass
-        return c, s
+    # ── STEP 3: Fetch from Semantic Scholar if still need more ─────────────────
+    if len(local_papers) < req.num_papers:
+        try:
+            from arxiv_ingest import ingest_quick_s2  # pyre-ignore
+            s2_result = ingest_quick_s2(req.topic, max_results=30)
+            if s2_result.get("added", 0) > 0:
+                source_parts.append(f"S2 (+{s2_result['added']})")
+                # Get newly saved papers
+                existing_ids = {p.id for p in local_papers}
+                new_s2 = db.query(PaperModel).filter(
+                    PaperModel.domains.contains([req.topic])
+                ).all()
+                for p in new_s2:
+                    if p.id not in existing_ids:
+                        local_papers.append(p)
+                        existing_ids.add(p.id)
+        except Exception as e:
+            logger.warning(f"S2 fetch failed: {e}")
 
-    def _fetch_relaxed(c, s):
-        if len(c) < 3:
-            try:
-                from arxiv_ingest import score_paper  # pyre-ignore
-                all_p = db.query(PaperModel).all()
-                relaxed = []
-                for p in all_p:
-                    sc = score_paper({"title": p.title, "abstract": p.abstract}, core_query)
-                    if sc >= 1: relaxed.append((p, sc))
-                relaxed.sort(key=lambda x: x[1], reverse=True)
-                return [p for p, _ in relaxed[:req.num_papers]], s + " (Relaxed)"
-            except Exception: pass
-        return c, s
+    # ── STEP 4: OpenAlex if still insufficient ─────────────────────────────────
+    if len(local_papers) < req.num_papers:
+        try:
+            from arxiv_ingest import fetch_openalex  # pyre-ignore
+            oa_results = fetch_openalex(req.topic, max_results=20)
+            if oa_results:
+                added = save_dicts_to_db(oa_results, "openalex")
+                if added > 0:
+                    source_parts.append(f"OpenAlex (+{added})")
+                    existing_ids = {p.id for p in local_papers}
+                    for d in oa_results:
+                        p = db.query(PaperModel).filter_by(id=d["id"]).first()
+                        if p and p.id not in existing_ids:
+                            local_papers.append(p)
+                            existing_ids.add(p.id)
+        except Exception as e:
+            logger.warning(f"OpenAlex fetch failed: {e}")
 
-    def _fetch_db_fallback(c, s):
-        if len(c) < 3:
-            try:
-                from arxiv_ingest import fallback_db_search  # pyre-ignore
-                return fallback_db_search(req.topic, db, limit=20), "DB Fallback"
-            except Exception: pass
-        return c, s
+    # ── STEP 5: CrossRef as last external resort ───────────────────────────────
+    if len(local_papers) < max(5, req.num_papers // 2):
+        try:
+            from arxiv_ingest import fetch_crossref  # pyre-ignore
+            cr_results = fetch_crossref(req.topic, max_results=15)
+            if cr_results:
+                added = save_dicts_to_db(cr_results, "crossref")
+                if added > 0:
+                    source_parts.append(f"CrossRef (+{added})")
+                    existing_ids = {p.id for p in local_papers}
+                    for d in cr_results:
+                        p = db.query(PaperModel).filter_by(id=d["id"]).first()
+                        if p and p.id not in existing_ids:
+                            local_papers.append(p)
+                            existing_ids.add(p.id)
+        except Exception as e:
+            logger.warning(f"CrossRef fetch failed: {e}")
 
-    def _fetch_emergency(c, s):
-        if len(c) < 3:
-            try:
-                terms = [t.lower() for t in core_query.split() if len(t) > 2]
-                all_p = db.query(PaperModel).all()
-                em = [p for p in all_p if any(t in ((p.title or "") + " " + (p.abstract or "")).lower() for t in terms)]
-                if em: return em[:max(req.num_papers, 5)], "Emergency Match"
-                most_cited = db.query(PaperModel).order_by(PaperModel.citation_count.desc()).limit(max(req.num_papers, 5)).all()
-                return most_cited, "Emergency Base"
-            except Exception: pass
-        return c, s
+    # ── STEP 6: IDF-aware relevance filter ────────────────────────────────────
+    # CRITICAL ANTI-POLLUTION STEP:
+    # Generic terms like "detection", "analysis", "learning" appear in almost all
+    # papers and must NOT be the sole basis for inclusion.
+    # Only papers that match specific/rare topic terms are included.
+    candidates = local_papers
+    
+    if candidates:
+        # Compute how many papers in this candidate set contain each query term
+        # (document frequency) — high-DF terms are generic, low-DF terms are specific
+        total = len(candidates)
+        query_terms = [t.lower() for t in req.topic.split() if t.strip()]
+        
+        import re
+        term_df = {}
+        for t in query_terms:
+            pattern = r'\b' + re.escape(t) + r'\b'
+            count = sum(
+                1 for p in candidates
+                if re.search(pattern, ((p.title or "") + " " + (p.abstract or "")).lower())
+            )
+            term_df[t] = count / total if total > 0 else 0
+        
+        # Specific terms: appear in < 60% of the candidate set
+        # Generic terms: appear in ≥ 60% of the candidate set (too common to be distinguishing)
+        specific_terms = [t for t, df in term_df.items() if df < 0.6]
+        generic_terms = [t for t, df in term_df.items() if df >= 0.6]
+        
+        logger.info(f"Specific terms for '{req.topic}': {specific_terms}")
+        logger.info(f"Generic terms (ignored for filtering): {generic_terms}")
+        
+        def is_specifically_relevant(p) -> bool:
+            """Paper must match at least one SPECIFIC (non-generic) query term."""
+            if not specific_terms:
+                # If all terms are generic (e.g., query is just "detection"),
+                # fall back to any term match
+                return score_against_topic(p) >= 1
+            text = ((p.title or "") + " " + (p.abstract or "")).lower()
+            return any(
+                re.search(r'\b' + re.escape(t) + r'\b', text)
+                for t in specific_terms
+            )
+        
+        # Filter: paper must match at least one specific/distinguishing term
+        relevant = [p for p in candidates if is_specifically_relevant(p)]
+        
+        if relevant:
+            # Sort by full topic relevance score
+            relevant_scored = [(p, score_against_topic(p)) for p in relevant]
+            relevant_scored.sort(key=lambda x: x[1], reverse=True)
+            candidates = [p for p, _ in relevant_scored]
+            logger.info(f"After IDF relevance filter: {len(candidates)} papers remain for '{req.topic}'")
+        else:
+            # If IDF filter leaves nothing, try falling back with any term match
+            logger.warning(f"IDF filter returned 0 results — relaxing to any term match")
+            any_match = [(p, score_against_topic(p)) for p in candidates if score_against_topic(p) >= 1]
+            any_match.sort(key=lambda x: x[1], reverse=True)
+            if any_match:
+                candidates = [p for p, _ in any_match]
+                is_fallback = True
+                source_parts.append("(relaxed relevance)")
+            else:
+                # Truly nothing relevant — use all candidates as fallback
+                candidates = local_papers
+                is_fallback = True
+                source_parts.append("(unfiltered fallback)")
 
-    # Execute structured cascade
-    candidates, source = _fetch_local()
-    candidates, source = _fetch_s2(candidates, source)
-    candidates, source = _fetch_openalex(candidates, source)
-    candidates, source = _fetch_crossref(candidates, source)
-    candidates, source = _fetch_relaxed(candidates, source)
-    candidates, source = _fetch_db_fallback(candidates, source)
-    candidates, source = _fetch_emergency(candidates, source)
+    # ── STEP 7: Absolute fallback — most recent papers from full DB ────────────
+    if len(candidates) < 3:
+        logger.warning(f"Very few results for '{req.topic}' — falling back to relaxed match")
+        # Try relaxed match: any term from query appears anywhere
+        all_p = db.query(PaperModel).all()
+        query_terms = [t.lower() for t in req.topic.split() if t.strip()]
+        relaxed = []
+        for p in all_p:
+            text = ((p.title or "") + " " + (p.abstract or "")).lower()
+            if any(t in text for t in query_terms):
+                sc = score_against_topic(p)
+                relaxed.append((p, sc))
+        relaxed.sort(key=lambda x: x[1], reverse=True)
+        candidates = [p for p, _ in relaxed[:req.num_papers]]
+        if candidates:
+            source_parts.append("Relaxed Match")
+            is_fallback = True
 
-    # FINAL SAFETY
-    if len(candidates) < 5:
-        candidates = get_good_candidates(force_unfiltered=True)[:10]
-
-    # GLOBAL FAIL-SAFE (VERY IMPORTANT)
+    # ── GLOBAL FAIL-SAFE ───────────────────────────────────────────────────────
     if not candidates:
         return {
             "topic": req.topic,
@@ -243,7 +366,7 @@ def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
             "parsed_query": parsed
         }
 
-    # 6. Ranking layer
+    # ── STEP 8: Final ranking ──────────────────────────────────────────────────
     from ranking import rank_papers  # pyre-ignore
     ranked_with_scores = rank_papers(candidates, req.topic, limit=req.num_papers)
 
@@ -257,7 +380,6 @@ def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
         text = ((p.title or "") + " " + (p.abstract or "")).lower()
         matched_keywords = [t for t in all_search_terms if t in text]
 
-        # Use rank_score as the primary display score (0-100)
         confidence = int(rank_score * 100)
 
         reasons = []
@@ -278,9 +400,19 @@ def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
             "score": confidence,
             "id": p.id,
             "llm_reason": llm_reason,
-            "url": getattr(p, "url", None) or (f"https://arxiv.org/abs/{p.id}" if getattr(p, "source", "") == "arxiv" or str(p.id).replace('.','').isdigit() else None),
-            "pdf_url": getattr(p, "pdf_url", None) or (f"https://arxiv.org/pdf/{p.id}.pdf" if getattr(p, "source", "") == "arxiv" or str(p.id).replace('.','').isdigit() else None)
+            "url": getattr(p, "url", None) or (
+                f"https://arxiv.org/abs/{p.id}"
+                if getattr(p, "source", "") == "arxiv" or str(p.id).replace('.', '').isdigit()
+                else None
+            ),
+            "pdf_url": getattr(p, "pdf_url", None) or (
+                f"https://arxiv.org/pdf/{p.id}.pdf"
+                if getattr(p, "source", "") == "arxiv" or str(p.id).replace('.', '').isdigit()
+                else None
+            )
         })
+
+    source = " | ".join(source_parts) if source_parts else "unknown"
 
     return {
         "topic": req.topic,
