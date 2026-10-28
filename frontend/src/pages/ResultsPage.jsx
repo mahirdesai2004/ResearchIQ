@@ -86,16 +86,15 @@ export default function ResultsPage() {
       
       setPapers([]);
       setTrendExplanation(null);
-      
-      // Parallel execution: fetch papers, trends, and analytical intelligence concurrently
-      // so the UI doesn't wait sequentially on 4 round-trips!
-      
-      // 1. Fetch main papers via /research/query
-      const papersPromise = researchQuery({
-        topic: query,
-        purpose: purpose,
-        num_papers: numPapers,
-      }).then(res => {
+
+      // 1. Fetch main papers FIRST so they display immediately
+      try {
+        const res = await researchQuery({
+          topic: query,
+          purpose: purpose,
+          num_papers: numPapers,
+        });
+
         const fetched = res.papers || [];
         setPapers(fetched);
         setTotalCount(res.count || 0);
@@ -119,47 +118,42 @@ export default function ResultsPage() {
           setAnalysisSummary(null);
           setGapSentences([]);
         }
-      }).catch(err => {
+      } catch (err) {
         console.error("Error fetching research query:", err);
-      }).finally(() => {
+      } finally {
         setLoadingPapers(false);
-      });
+      }
 
-      // 2. Fetch keyword trend concurrently
-      const trendPromise = getKeywordTrend(query).then(trendRes => {
-        if (Array.isArray(trendRes) && trendRes.length >= 1) {
-          setTrendData(trendRes.map(item => ({...item, year: String(item.year)})));
-        } else {
+      // 2. Fetch ancillary analytics concurrently in background
+      getKeywordTrend(query)
+        .then(trendRes => {
+          if (Array.isArray(trendRes) && trendRes.length >= 1) {
+            setTrendData(trendRes.map(item => ({...item, year: String(item.year)})));
+          } else {
+            setTrendData([]);
+          }
+        })
+        .catch(err => {
+          console.error("Error fetching trend:", err);
           setTrendData([]);
-        }
-      }).catch(err => {
-        console.error("Error fetching trend:", err);
-        setTrendData([]);
-      }).finally(() => {
-        setLoadingTrend(false);
-      });
+        })
+        .finally(() => setLoadingTrend(false));
 
-      // 3. Fetch Literature Review concurrently
-      const reviewPromise = getLiteratureReview(query).then(reviewRes => {
-        setReviewData(reviewRes);
-      }).catch(err => {
-        console.error("Error fetching review:", err);
-        setReviewData(null);
-      }).finally(() => {
-        setLoadingReview(false);
-      });
+      getLiteratureReview(query)
+        .then(reviewRes => setReviewData(reviewRes))
+        .catch(err => {
+          console.error("Error fetching review:", err);
+          setReviewData(null);
+        })
+        .finally(() => setLoadingReview(false));
 
-      // 4. Fetch Gap Detection concurrently
-      const gapPromise = getGapDetection(query).then(gapRes => {
-        setGapData(gapRes);
-      }).catch(err => {
-        console.error("Error fetching gaps:", err);
-        setGapData(null);
-      }).finally(() => {
-        setLoadingGaps(false);
-      });
-
-      await Promise.allSettled([papersPromise, trendPromise, reviewPromise, gapPromise]);
+      getGapDetection(query)
+        .then(gapRes => setGapData(gapRes))
+        .catch(err => {
+          console.error("Error fetching gaps:", err);
+          setGapData(null);
+        })
+        .finally(() => setLoadingGaps(false));
     }
     
     fetchData();
