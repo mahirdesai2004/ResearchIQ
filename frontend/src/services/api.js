@@ -89,4 +89,39 @@ export const analyzePaper = async (paper_id) => {
   return response.data;
 };
 
+// Recommender System & RL Interaction API
+export const logUserInteraction = async (sessionId, paperId, action, topic = '') => {
+  try {
+    const response = await api.post('/user/interact', {
+      session_id: sessionId,
+      paper_id: String(paperId),
+      action,
+      topic
+    });
+    return response.data;
+  } catch (err) {
+    console.warn('Interaction logging error (non-fatal):', err);
+    return null;
+  }
+};
+
+export const getPersonalizedRecommendations = async (sessionId, topic = '', limit = 6, useAgents = false) => {
+  const response = await api.get('/recommend/for-you', {
+    params: {
+      session_id: sessionId,
+      topic: topic || undefined,
+      limit,
+      use_agents: useAgents
+    }
+  });
+  return response.data;
+};
+
+export const getUserHistory = async (sessionId) => {
+  const response = await api.get('/user/history', {
+    params: { session_id: sessionId }
+  });
+  return response.data;
+};
+
 export default api;

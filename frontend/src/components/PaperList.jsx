@@ -1,6 +1,44 @@
-import { FileText, Calendar, ExternalLink, FileDown, Users, Tag, HelpCircle, Activity, Sparkles, Brain, GitBranch } from 'lucide-react';
+import { useState } from 'react';
+import { FileText, Calendar, ExternalLink, FileDown, Users, Tag, HelpCircle, Activity, Sparkles, Brain, Bookmark, BookmarkCheck, ThumbsDown } from 'lucide-react';
+import { logUserInteraction } from '../services/api';
 
-export default function PaperList({ papers, loading, mode = 'deep dive', emptyMessage = 'No papers found.', onAnalyze }) {
+export default function PaperList({ papers, loading, mode = 'deep dive', emptyMessage = 'No papers found.', onAnalyze, topic = '' }) {
+  const [bookmarkedIds, setBookmarkedIds] = useState(new Set());
+  const [dismissedIds, setDismissedIds] = useState(new Set());
+
+  const getSessionId = () => {
+    let s = localStorage.getItem('researchiq_session_id');
+    if (!s) {
+      s = 'session_' + Math.random().toString(36).substring(2, 9);
+      localStorage.setItem('researchiq_session_id', s);
+    }
+    return s;
+  };
+
+  const handleBookmark = async (paper) => {
+    const sId = getSessionId();
+    const newSet = new Set(bookmarkedIds);
+    if (newSet.has(paper.id)) {
+      newSet.delete(paper.id);
+    } else {
+      newSet.add(paper.id);
+      await logUserInteraction(sId, paper.id, 'bookmark', topic);
+    }
+    setBookmarkedIds(newSet);
+  };
+
+  const handleDismiss = async (paper) => {
+    const sId = getSessionId();
+    const newSet = new Set(dismissedIds);
+    newSet.add(paper.id);
+    setDismissedIds(newSet);
+    await logUserInteraction(sId, paper.id, 'dismiss', topic);
+  };
+
+  const handlePdfClick = (paper) => {
+    const sId = getSessionId();
+    logUserInteraction(sId, paper.id, 'pdf_click', topic);
+  };
   if (loading) {
     return (
       <div className="space-y-4">
@@ -96,28 +134,49 @@ export default function PaperList({ papers, loading, mode = 'deep dive', emptyMe
           {/* Paper links */}
           <div className="flex gap-3">
             {paperPdfUrl ? (
-              <a href={paperPdfUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-orange-600 hover:text-orange-700 transition-colors">
+              <a href={paperPdfUrl} target="_blank" rel="noopener noreferrer" onClick={() => handlePdfClick(paper)} className="inline-flex items-center gap-1 text-sm font-medium text-orange-600 hover:text-orange-700 transition-colors">
                 <FileDown size={14} /> PDF
               </a>
             ) : paperUrl ? (
-              <a href={paperUrl} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors">
+              <a href={paperUrl} target="_blank" rel="noopener noreferrer" onClick={() => handlePdfClick(paper)} className="inline-flex items-center gap-1 text-sm font-medium text-gray-500 hover:text-gray-800 transition-colors">
                 <ExternalLink size={14} /> View Paper
               </a>
             ) : null}
           </div>
           
-          {/* AI Action Buttons */}
-          {onAnalyze && paper.id && (
-            <div className="flex gap-2 ml-auto">
+          {/* Action Buttons: RL Feedback & Explain */}
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              onClick={() => handleBookmark(paper)}
+              className={`inline-flex items-center gap-1 text-xs font-medium px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer border ${
+                bookmarkedIds.has(paper.id)
+                  ? 'bg-amber-100 text-amber-800 border-amber-300'
+                  : 'bg-slate-50 text-slate-600 hover:bg-slate-100 border-slate-200'
+              }`}
+              title={bookmarkedIds.has(paper.id) ? "Bookmarked (Reward +5 applied)" : "Bookmark Paper (+5 RL Reward)"}
+            >
+              {bookmarkedIds.has(paper.id) ? <BookmarkCheck size={13} className="text-amber-600" /> : <Bookmark size={13} />}
+              <span>{bookmarkedIds.has(paper.id) ? 'Saved' : 'Save'}</span>
+            </button>
+
+            <button
+              onClick={() => handleDismiss(paper)}
+              className="inline-flex items-center gap-1 text-xs font-medium bg-slate-50 text-slate-400 hover:text-rose-600 hover:bg-rose-50 px-2 py-1.5 rounded-lg transition-colors cursor-pointer border border-slate-200"
+              title="Not interested (Negative RL feedback)"
+            >
+              <ThumbsDown size={12} />
+            </button>
+
+            {onAnalyze && paper.id && (
               <button
                 onClick={() => onAnalyze(paper)}
-                className="inline-flex items-center gap-1 text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1 text-xs font-medium bg-amber-50 text-amber-700 hover:bg-amber-100 px-2.5 py-1.5 rounded-lg transition-colors cursor-pointer border border-amber-200"
                 title="Explain Simply"
               >
                 <Brain size={12} /> Explain
               </button>
-            </div>
-          )}
+            )}
+          </div>
         </div>
       </div>
     );
