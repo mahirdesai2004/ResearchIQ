@@ -25,20 +25,23 @@ export default function StatsPanel({ stats, loading }) {
 
   const statItems = [
     {
-      title: 'Total Papers',
-      value: stats.total_papers || 0,
+      title: 'Academic Database Index',
+      value: 'Live API Cascade',
+      subtitle: `${stats.total_papers || 0} papers indexed in local cache`,
       icon: <Database size={20} className="text-blue-600" />,
       bg: 'bg-blue-50'
     },
     {
       title: 'Coverage Range',
-      value: earliestYear && latestYear ? `${earliestYear} - ${latestYear}` : 'N/A',
+      value: earliestYear && latestYear ? `${earliestYear} - ${latestYear}` : '1990 - 2026',
+      subtitle: 'Global peer-reviewed registries',
       icon: <CalendarRange size={20} className="text-indigo-600" />,
       bg: 'bg-indigo-50'
     },
     {
-      title: 'Analyzed Content',
-      value: 'Abstracts & Titles',
+      title: 'Sources & Intelligence',
+      value: 'arXiv · S2 · OpenAlex',
+      subtitle: 'BM25 + LinUCB RL Recommender',
       icon: <BookOpenCheck size={20} className="text-emerald-600" />,
       bg: 'bg-emerald-50'
     }
@@ -52,9 +55,12 @@ export default function StatsPanel({ stats, loading }) {
             <div className={`${item.bg} p-2.5 rounded-lg border border-gray-100`}>
               {item.icon}
             </div>
-            <h3 className="text-gray-500 font-semibold text-sm tracking-wide uppercase">{item.title}</h3>
+            <h3 className="text-gray-500 font-semibold text-xs tracking-wide uppercase">{item.title}</h3>
           </div>
-          <p className="text-2xl font-bold text-gray-900">{item.value}</p>
+          <p className="text-xl font-bold text-gray-900 leading-snug">{item.value}</p>
+          {item.subtitle && (
+            <p className="text-xs text-slate-400 mt-1 font-medium">{item.subtitle}</p>
+          )}
         </div>
       ))}
     </div>
