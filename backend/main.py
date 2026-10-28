@@ -108,14 +108,23 @@ def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
     source_parts = []
     is_fallback = False
 
-    topic_lower = req.topic.lower().strip()
+    # Typo correction & normalization:
+    # If LLM extracted clean core terms (e.g., 'quantumm computng' -> ['quantum computing']),
+    # search_query uses the normalized topic to ensure APIs like arXiv and S2 return accurate results.
+    core_terms_list = parsed.get("core_terms", [])
+    if core_terms_list and len(" ".join(core_terms_list)) >= 3:
+        search_topic = " ".join(core_terms_list)
+    else:
+        search_topic = req.topic
 
-    # ── Helper: score a paper against the FULL original topic ──────────────────
+    topic_lower = search_topic.lower().strip()
+    original_lower = req.topic.lower().strip()
+
+    # ── Helper: score a paper against the corrected and original topic ────────
     def score_against_topic(p) -> int:
-        return score_paper(
-            {"title": p.title or "", "abstract": p.abstract or ""},
-            req.topic   # use FULL original topic, not just core_query
-        )
+        s1 = score_paper({"title": p.title or "", "abstract": p.abstract or ""}, search_topic)
+        s2 = score_paper({"title": p.title or "", "abstract": p.abstract or ""}, req.topic)
+        return max(s1, s2)
 
     # ── Helper: check if paper is relevant enough to return ────────────────────
     def is_relevant(p, min_score: int = 1) -> bool:
@@ -161,33 +170,30 @@ def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
         return added
 
     # ── STEP 1: Domain-aware local lookup ──────────────────────────────────────
-    # CRITICAL: Only return papers whose domain tag EXACTLY matches the current topic.
-    # Do NOT use score-based secondary matching here — that's what caused fraud detection
-    # papers to appear in cardiac/VT/VF queries (they both contain the word "detection").
-    # Papers from other domains will be fetched fresh from external APIs below.
+    # Only return papers whose domain tag matches the current topic (or corrected topic).
     local_papers = []
     all_db_papers = db.query(PaperModel).all()
     
     for p in all_db_papers:
         p_domains = [d.lower() for d in (p.domains or [])]
-        if topic_lower in p_domains:
+        if topic_lower in p_domains or original_lower in p_domains:
             local_papers.append(p)
 
     if local_papers:
         source_parts.append(f"Local DB ({len(local_papers)} domain-matched)")
-        logger.info(f"Found {len(local_papers)} domain-matched papers in local DB for '{req.topic}'")
+        logger.info(f"Found {len(local_papers)} domain-matched papers in local DB for '{search_topic}'")
 
     # ── STEP 2: ALWAYS fetch fresh from arXiv ──────────────────────────────────
-    # arXiv is the authoritative source — never skip it for academic queries.
+    # arXiv is the authoritative source — uses corrected search_topic for accurate retrieval.
     try:
-        logger.info(f"Fetching fresh from arXiv for: '{req.topic}'")
-        arxiv_result = ingest_quick(req.topic, max_results=40)
+        logger.info(f"Fetching fresh from arXiv for: '{search_topic}'")
+        arxiv_result = ingest_quick(search_topic, max_results=40)
         if arxiv_result.get("added", 0) > 0:
             source_parts.append(f"arXiv (+{arxiv_result['added']})")
-            logger.info(f"arXiv added {arxiv_result['added']} new papers for '{req.topic}'")
+            logger.info(f"arXiv added {arxiv_result['added']} new papers for '{search_topic}'")
             # Re-query DB to include newly added papers with domain tag
             newly_added = db.query(PaperModel).filter(
-                PaperModel.domains.contains([req.topic])
+                PaperModel.domains.contains([search_topic])
             ).all()
             # Merge without duplicates
             existing_ids = {p.id for p in local_papers}
@@ -197,23 +203,21 @@ def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
                     existing_ids.add(p.id)
         else:
             logger.info(f"arXiv: no new papers (already cached or API returned 0)")
-            # Still re-score DB in case we cached but domains didn't match
             source_parts.append("arXiv (cached)")
     except Exception as e:
-        logger.warning(f"arXiv fetch failed for '{req.topic}': {e}")
+        logger.warning(f"arXiv fetch failed for '{search_topic}': {e}")
         source_parts.append("arXiv (failed)")
 
     # ── STEP 3: Fetch from Semantic Scholar if still need more ─────────────────
     if len(local_papers) < req.num_papers:
         try:
             from arxiv_ingest import ingest_quick_s2  # pyre-ignore
-            s2_result = ingest_quick_s2(req.topic, max_results=30)
+            s2_result = ingest_quick_s2(search_topic, max_results=30)
             if s2_result.get("added", 0) > 0:
                 source_parts.append(f"S2 (+{s2_result['added']})")
-                # Get newly saved papers
                 existing_ids = {p.id for p in local_papers}
                 new_s2 = db.query(PaperModel).filter(
-                    PaperModel.domains.contains([req.topic])
+                    PaperModel.domains.contains([search_topic])
                 ).all()
                 for p in new_s2:
                     if p.id not in existing_ids:
@@ -226,7 +230,7 @@ def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
     if len(local_papers) < req.num_papers:
         try:
             from arxiv_ingest import fetch_openalex  # pyre-ignore
-            oa_results = fetch_openalex(req.topic, max_results=20)
+            oa_results = fetch_openalex(search_topic, max_results=20)
             if oa_results:
                 added = save_dicts_to_db(oa_results, "openalex")
                 if added > 0:
