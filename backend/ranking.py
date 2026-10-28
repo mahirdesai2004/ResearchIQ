@@ -102,19 +102,36 @@ def score_and_filter(papers, query_terms, term_freq=None):
 
 def rank_papers(papers, query: str, limit: int = 20):
     """
-    Rank papers by composite score:
-      score = (citation_norm * 0.5) + (recency * 0.3) + (relevance * 0.2)
+    Rank papers by composite Hybrid IR score:
+      score = (bm25_score * 0.45) + (citation_norm * 0.35) + (recency * 0.20)
     
-    NOTE: Do NOT filter short terms — acronyms like 'vt', 'vf', 'ai', 'ml' matter.
+    Integrates BM25Okapi for term frequency saturation, document length normalization,
+    and inverse document frequency matching.
     """
     from datetime import datetime
     import re
+    from bm25_ir import BM25Ranker
+
+    if not papers:
+        return []
+
     current_year = datetime.now().year
-    # Keep ALL query terms including short ones like "vt", "vf", "ai"
-    query_terms = [t.lower() for t in query.split() if t.strip()]
+
+    # 1. Compute BM25 scores for all candidate papers
+    corpus = [
+        f"{getattr(p, 'title', '') or ''} {getattr(p, 'title', '') or ''} {getattr(p, 'abstract', '') or ''}"
+        for p in papers
+    ]
+    ranker = BM25Ranker(k1=1.5, b=0.75)
+    ranker.fit(corpus)
+    bm25_raw = ranker.score(query)
+    max_bm25 = max(bm25_raw) if bm25_raw and max(bm25_raw) > 0 else 1.0
+    bm25_norm = [s / max_bm25 for s in bm25_raw]
 
     scored = []
-    for p in papers:
+    for i, p in enumerate(papers):
+        bm25_s = bm25_norm[i]
+
         # Citation score: normalize to [0, 1], cap at 500
         cites = getattr(p, 'citation_count', 0) or 0
         citation_norm = min(cites, 500) / 500.0
@@ -123,18 +140,8 @@ def rank_papers(papers, query: str, limit: int = 20):
         year = p.year or 2020
         recency = max(0.0, min(1.0, (year - (current_year - 10)) / 10.0))
 
-        # Relevance score: fraction of query terms found (with word boundary matching)
-        text = ((p.title or "") + " " + (p.abstract or "")).lower()
-        if query_terms:
-            matches = sum(
-                1 for t in query_terms
-                if re.search(r'\b' + re.escape(t) + r'\b', text)
-            )
-            relevance = matches / len(query_terms)
-        else:
-            relevance = 0.5
-
-        score = (citation_norm * 0.5) + (recency * 0.3) + (relevance * 0.2)
+        # Composite score: BM25 is the primary lexical relevance driver
+        score = (bm25_s * 0.45) + (citation_norm * 0.35) + (recency * 0.20)
         scored.append((p, round(score, 4)))
 
     scored.sort(key=lambda x: x[1], reverse=True)
