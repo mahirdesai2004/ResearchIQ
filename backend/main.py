@@ -748,3 +748,203 @@ def gap_detection(domain: str = Query(...), db: Session = Depends(get_db)):
         "gaps": gap_sentences
     }
 
+# -------------------------------------------------------------------
+# Recommendation & RL Multi-Agent Intelligence Endpoints
+# -------------------------------------------------------------------
+class InteractionRequest(BaseModel):
+    session_id: str
+    paper_id: str
+    action: str  # "bookmark", "read_detail", "chat_followup", "pdf_click", "dismiss", "skip"
+    topic: Optional[str] = ""
+
+@app.post("/user/interact")
+def user_interact(req: InteractionRequest, db: Session = Depends(get_db)):
+    """
+    Log an explicit or implicit user interaction event and update the LinUCB model online.
+    """
+    from database import UserInteraction, UserSessionProfile
+    import rl_recommender
+
+    paper = db.query(PaperModel).filter(PaperModel.id == req.paper_id).first()
+    if not paper:
+        raise HTTPException(status_code=404, detail="Paper not found")
+
+    profile = db.query(UserSessionProfile).filter(UserSessionProfile.session_id == req.session_id).first()
+    if not profile:
+        profile = UserSessionProfile(
+            session_id=req.session_id,
+            preferred_domains=[],
+            bookmarked_domains=[],
+            dismissed_domains=[],
+            domain_exposure={}
+        )
+        db.add(profile)
+        db.commit()
+        db.refresh(profile)
+
+    paper_dict = {
+        "id": paper.id,
+        "title": paper.title,
+        "abstract": paper.abstract,
+        "year": paper.year,
+        "citation_count": getattr(paper, "citation_count", 0),
+        "domains": paper.domains or []
+    }
+
+    user_state = {
+        "preferred_domains": profile.preferred_domains or [],
+        "bookmarked_domains": profile.bookmarked_domains or [],
+        "dismissed_domains": profile.dismissed_domains or [],
+        "domain_exposure": profile.domain_exposure or {}
+    }
+
+    # Record interaction & LinUCB online update
+    applied_reward = rl_recommender.record_interaction(
+        req.session_id,
+        paper_dict,
+        req.action,
+        user_state,
+        topic=req.topic or ""
+    )
+
+    # Update database session profile state
+    p_domains = paper.domains or []
+    pref_set = set(profile.preferred_domains or [])
+    book_set = set(profile.bookmarked_domains or [])
+    dism_set = set(profile.dismissed_domains or [])
+    exposure = dict(profile.domain_exposure or {})
+
+    for d in p_domains:
+        exposure[d] = exposure.get(d, 0) + 1
+        if req.action == "bookmark":
+            book_set.add(d)
+            pref_set.add(d)
+        elif req.action in ["read_detail", "chat_followup", "pdf_click"]:
+            pref_set.add(d)
+        elif req.action == "dismiss":
+            dism_set.add(d)
+
+    profile.preferred_domains = list(pref_set)
+    profile.bookmarked_domains = list(book_set)
+    profile.dismissed_domains = list(dism_set)
+    profile.domain_exposure = exposure
+
+    interaction = UserInteraction(
+        session_id=req.session_id,
+        paper_id=req.paper_id,
+        action=req.action,
+        reward=int(applied_reward),
+        topic=req.topic
+    )
+    db.add(interaction)
+    db.commit()
+
+    return {
+        "status": "success",
+        "action": req.action,
+        "reward_applied": applied_reward,
+        "preferred_domains": list(pref_set),
+        "bookmarked_domains": list(book_set)
+    }
+
+@app.get("/recommend/for-you")
+def recommend_for_you(
+    session_id: str = Query("default"),
+    topic: Optional[str] = Query(None),
+    limit: int = Query(10),
+    use_agents: bool = Query(False),
+    db: Session = Depends(get_db)
+):
+    """
+    LinUCB Contextual Bandit personalized recommendations.
+    Optionally calls LangGraph agent orchestrator for synthesized rationale.
+    """
+    from database import UserSessionProfile
+    import rl_recommender
+
+    profile = db.query(UserSessionProfile).filter(UserSessionProfile.session_id == session_id).first()
+    user_state = {
+        "preferred_domains": profile.preferred_domains if profile else [],
+        "bookmarked_domains": profile.bookmarked_domains if profile else [],
+        "dismissed_domains": profile.dismissed_domains if profile else [],
+        "domain_exposure": profile.domain_exposure if profile else {}
+    }
+
+    all_papers = db.query(PaperModel).all()
+    if not all_papers:
+        return {"recommendations": [], "session_id": session_id}
+
+    candidate_dicts = [
+        {
+            "id": p.id,
+            "title": p.title,
+            "abstract": p.abstract,
+            "authors": p.authors,
+            "year": p.year,
+            "citation_count": getattr(p, "citation_count", 0),
+            "domains": p.domains or [],
+            "keywords": p.keywords or [],
+            "url": getattr(p, "url", None),
+            "pdf_url": getattr(p, "pdf_url", None)
+        }
+        for p in all_papers
+    ]
+
+    target_topic = topic or (user_state["preferred_domains"][0] if user_state["preferred_domains"] else "")
+
+    recommendations = rl_recommender.get_personalized_recommendations(
+        session_id=session_id,
+        candidates=candidate_dicts,
+        user_state=user_state,
+        topic=target_topic,
+        k=limit
+    )
+
+    agent_insights = None
+    if use_agents and recommendations:
+        try:
+            from agent_orchestrator import run_agentic_workflow
+            agent_insights = run_agentic_workflow(target_topic or "Academic Discovery", recommendations, session_id=session_id)
+        except Exception as e:
+            logger.warning(f"Agentic workflow error: {e}")
+
+    return {
+        "session_id": session_id,
+        "topic": target_topic,
+        "recommendations": recommendations,
+        "agent_synthesis": agent_insights
+    }
+
+@app.get("/user/history")
+def user_history(session_id: str = Query("default"), db: Session = Depends(get_db)):
+    """
+    Retrieve interaction history, bookmarks, and user session profile.
+    """
+    from database import UserInteraction, UserSessionProfile
+    interactions = (
+        db.query(UserInteraction)
+        .filter(UserInteraction.session_id == session_id)
+        .order_by(UserInteraction.timestamp.desc())
+        .limit(50)
+        .all()
+    )
+
+    bookmarked_ids = [
+        i.paper_id for i in interactions if i.action == "bookmark"
+    ]
+    bookmarked_papers = db.query(PaperModel).filter(PaperModel.id.in_(bookmarked_ids)).all() if bookmarked_ids else []
+
+    profile = db.query(UserSessionProfile).filter(UserSessionProfile.session_id == session_id).first()
+
+    return {
+        "session_id": session_id,
+        "total_interactions": len(interactions),
+        "bookmarked_papers": [
+            {"id": p.id, "title": p.title, "year": p.year, "domains": p.domains}
+            for p in bookmarked_papers
+        ],
+        "preferred_domains": profile.preferred_domains if profile else [],
+        "bookmarked_domains": profile.bookmarked_domains if profile else []
+    }
+
+
