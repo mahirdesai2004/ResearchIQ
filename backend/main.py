@@ -242,30 +242,30 @@ def research_query(req: ResearchQuery, db: Session = Depends(get_db)):
         source_parts.append(f"Local DB ({len(local_papers)} domain-matched)")
         logger.info(f"Found {len(local_papers)} domain-matched papers in local DB for '{search_topic}'")
 
-    # ── STEP 2: ALWAYS fetch fresh from arXiv ──────────────────────────────────
-    # arXiv is the authoritative source — uses corrected search_topic for accurate retrieval.
-    try:
-        logger.info(f"Fetching fresh from arXiv for: '{search_topic}'")
-        arxiv_result = ingest_quick(search_topic, max_results=40)
-        if arxiv_result.get("added", 0) > 0:
-            source_parts.append(f"arXiv (+{arxiv_result['added']})")
-            logger.info(f"arXiv added {arxiv_result['added']} new papers for '{search_topic}'")
-            # Re-query DB to include newly added papers with domain tag
-            newly_added = db.query(PaperModel).filter(
-                PaperModel.domains.contains([search_topic])
-            ).all()
-            # Merge without duplicates
-            existing_ids = {p.id for p in local_papers}
-            for p in newly_added:
-                if p.id not in existing_ids:
-                    local_papers.append(p)
-                    existing_ids.add(p.id)
-        else:
-            logger.info(f"arXiv: no new papers (already cached or API returned 0)")
-            source_parts.append("arXiv (cached)")
-    except Exception as e:
-        logger.warning(f"arXiv fetch failed for '{search_topic}': {e}")
-        source_parts.append("arXiv (failed)")
+    # ── STEP 2: Fetch from arXiv (Quick check if local database doesn't already have enough) ──
+    # If the local database already contains enough papers for this domain, don't block for 5-8 seconds on external APIs!
+    if len(local_papers) < req.num_papers:
+        try:
+            logger.info(f"Fetching fresh from arXiv for: '{search_topic}'")
+            arxiv_result = ingest_quick(search_topic, max_results=max(15, req.num_papers))
+            if arxiv_result.get("added", 0) > 0:
+                source_parts.append(f"arXiv (+{arxiv_result['added']})")
+                logger.info(f"arXiv added {arxiv_result['added']} new papers for '{search_topic}'")
+                # Re-query DB to include newly added papers with domain tag
+                newly_added = db.query(PaperModel).filter(
+                    PaperModel.domains.contains([search_topic])
+                ).all()
+                # Merge without duplicates
+                existing_ids = {p.id for p in local_papers}
+                for p in newly_added:
+                    if p.id not in existing_ids:
+                        local_papers.append(p)
+                        existing_ids.add(p.id)
+            else:
+                source_parts.append("arXiv (cached)")
+        except Exception as e:
+            logger.warning(f"arXiv fetch failed for '{search_topic}': {e}")
+            source_parts.append("arXiv (failed)")
 
     # ── STEP 3: Fetch from Semantic Scholar if still need more ─────────────────
     if len(local_papers) < req.num_papers:
