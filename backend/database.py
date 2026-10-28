@@ -34,6 +34,27 @@ class PaperModel(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
+class UserInteraction(Base):
+    __tablename__ = "user_interactions"
+
+    id = Column(Integer, primary_key=True, autoincrement=True)
+    session_id = Column(String, index=True, nullable=False)
+    paper_id = Column(String, index=True, nullable=False)
+    action = Column(String, nullable=False) # bookmark, read_detail, chat_followup, pdf_click, dismiss
+    reward = Column(Integer, default=0)
+    topic = Column(String, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow)
+
+class UserSessionProfile(Base):
+    __tablename__ = "user_session_profiles"
+
+    session_id = Column(String, primary_key=True, index=True)
+    preferred_domains = Column(JSON, default=list)
+    bookmarked_domains = Column(JSON, default=list)
+    dismissed_domains = Column(JSON, default=list)
+    domain_exposure = Column(JSON, default=dict)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
+
 # Create tables
 Base.metadata.create_all(bind=engine)
 
