@@ -60,6 +60,65 @@ class ResearchQuery(BaseModel):
 def health_check():
     return {"status": "ok"}
 
+@app.get("/system/stats")
+def system_stats(db: Session = Depends(get_db)):
+    """Dataset statistics endpoint for dashboard counters."""
+    total = db.query(PaperModel).count()
+    years = [p.year for p in db.query(PaperModel.year).filter(PaperModel.year != None).all() if p.year]
+    earliest = min(years) if years else None
+    latest = max(years) if years else None
+    return {
+        "total_papers": total,
+        "years_available": sorted(list(set(years))) if years else [],
+        "earliest_year": earliest,
+        "latest_year": latest
+    }
+
+@app.get("/analytics/recent-papers")
+def recent_papers(limit: int = Query(10), db: Session = Depends(get_db)):
+    """Return most recent papers sorted by year and date."""
+    papers = (
+        db.query(PaperModel)
+        .order_by(PaperModel.year.desc(), PaperModel.created_at.desc())
+        .limit(limit)
+        .all()
+    )
+    return [
+        {
+            "id": p.id,
+            "title": p.title,
+            "year": p.year,
+            "authors": p.authors,
+            "domains": p.domains,
+            "citation_count": p.citation_count
+        }
+        for p in papers
+    ]
+
+@app.get("/analytics/top-keywords")
+def top_keywords(limit: int = Query(10), db: Session = Depends(get_db)):
+    """Most frequent keywords appearing across stored papers."""
+    from collections import Counter
+    papers = db.query(PaperModel).all()
+    all_kw = []
+    for p in papers:
+        if p.keywords:
+            all_kw.extend(p.keywords)
+    top = [k for k, _ in Counter(all_kw).most_common(limit)]
+    return {"top_keywords": top}
+
+@app.get("/analytics/yearly-count")
+def yearly_count(db: Session = Depends(get_db)):
+    """Paper count grouped by year for analytics charts."""
+    counts = (
+        db.query(PaperModel.year, func.count(PaperModel.id))
+        .filter(PaperModel.year != None)
+        .group_by(PaperModel.year)
+        .order_by(PaperModel.year)
+        .all()
+    )
+    return [{"year": y, "count": c} for y, c in counts if y and y >= 1950]
+
 @app.get("/papers/arxiv")
 def get_arxiv_papers(query: str = Query("ai"), max_results: int = Query(50)):
     from query_parser import normalize
