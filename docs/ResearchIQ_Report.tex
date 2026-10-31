@@ -88,7 +88,7 @@
 
 {\normalsize By}\\[0.3cm]
 {\normalsize \textbf{Mahir Desai - 23FE10CSE00345}}\\[0.15cm]
-{\normalsize \textbf{Nemat Sachdeva - 23FE10CSE00366}}\\[0.9cm]
+{\normalsize \textbf{Nemat Sachdeva - 23FE10CSE00107}}\\[0.9cm]
 
 \IfFileExists{logo.png}{%
   \includegraphics[width=0.42\textwidth]{logo.png}\\[0.5cm]
@@ -134,6 +134,61 @@ Empirical benchmarking across 100 interaction episodes over 243 domain papers de
 
 \vspace{0.5cm}
 \textbf{Keywords:} Recommender Systems, Contextual Bandits, LinUCB, Reinforcement Learning, Exploration-Exploitation, Implicit Feedback, Cold-Start Problem, Position Bias.
+
+\newpage
+
+% ==============================================================================
+% Project Links & Evaluation Guide (Dedicated Standalone Page)
+% ==============================================================================
+\section*{\centering Project Links \& Evaluation Guide}
+\addcontentsline{toc}{section}{Project Links \& Evaluation Guide}
+
+\vspace{0.4cm}
+
+\subsection*{Essential Project Links}
+\begin{itemize}[leftmargin=1.8em, itemsep=6pt]
+    \item \textbf{Live Deployed Web Application (Vercel):} \\
+    \url{https://research-iq-seven.vercel.app/}
+    
+    \item \textbf{GitHub Source Code Repository:} \\
+    \url{https://github.com/mahirdesai2004/ResearchIQ}
+    
+    \item \textbf{Project Video Demonstration (Google Drive):} \\
+    \url{https://drive.google.com/file/d/1S3cl5CNLWIA592QjOoHWrzxc8G1Kpg51/view?usp=sharing}
+\end{itemize}
+
+\vspace{0.6cm}
+
+\subsection*{Step-by-Step Instructions for Evaluation}
+To evaluate the online reinforcement learning capabilities of ResearchIQ, please follow these steps:
+
+\begin{enumerate}[leftmargin=1.8em, itemsep=6pt]
+    \item \textbf{Open the Application:} Visit \url{https://research-iq-seven.vercel.app/} or run the local frontend at \texttt{http://localhost:5173}.
+    
+    \item \textbf{Initial Search (Cold Start Phase):} Search for an initial research topic (e.g., \textit{``deep reinforcement''} or \textit{``vt vf''}). On the very first search with a fresh session, no prior user interactions exist ($\mathbf{b} = \mathbf{0}$). The bandit serves an exploratory candidate slate.
+    
+    \item \textbf{Train the Agent (Interaction Feedback):}
+    \begin{itemize}[leftmargin=1.5em, itemsep=3pt]
+        \item Click \textbf{``Save''} (Bookmark) on 1--2 papers aligned with your interest ($+5.0$ reward).
+        \item Click \textbf{``PDF''} to read or view full-text research ($+2.0$ reward).
+        \item Click \textbf{``Dismiss''} (thumbs-down) on irrelevant papers ($-3.0$ penalty).
+    \end{itemize}
+    
+    \item \textbf{Observe Real-Time Dynamic Re-ranking:} Perform a second search or click the \textbf{Refresh} icon in the \textbf{``Recommended for You''} section. Notice how recommendations update in under $0.4\text{ ms}$ via the Sherman-Morrison rank-1 matrix update.
+    
+    \item \textbf{Explore Filter Tabs:}
+    \begin{itemize}[leftmargin=1.5em, itemsep=3pt]
+        \item \textbf{All:} Shows the combined optimal LinUCB recommendation slate.
+        \item \textbf{Matched (Exploitation):} Filters papers with high exploitation scores matching your saved topics.
+        \item \textbf{Novel (Exploration):} Filters high-uncertainty exploration papers surfacing serendipitous discoveries from adjacent fields.
+    \end{itemize}
+\end{enumerate}
+
+\vfill
+\noindent\rule{\linewidth}{0.6pt}
+\vspace{0.1cm}
+{\footnotesize \textbf{Project Guidance:} Dr. Neelam Chaplot \hfill \textbf{Students:} Mahir Desai (23FE10CSE00345), Nemat Sachdeva (23FE10CSE00107)}
+\vspace{0.2cm}
 
 \newpage
 {
