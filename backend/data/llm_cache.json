@@ -260,5 +260,57 @@
     "intent": "explain",
     "must_have": [],
     "avoid": []
-  }
+  },
+  "parse_query_vt vf detection implantable cardioverter": {
+    "core_terms": [
+      "vt",
+      "vf",
+      "detection"
+    ],
+    "context_terms": [
+      "implantable cardioverter"
+    ],
+    "domain": "cardiology",
+    "intent": "research",
+    "must_have": [],
+    "avoid": []
+  },
+  "summary_vt vf detection_W4410358824,W4411949664,W4405907512,W4396979291,W2095428098": "Research in VT/VF detection primarily focuses on timely and accurate identification of these life-threatening arrhythmias to prevent sudden cardiac arrest, particularly in resource-constrained and continuous monitoring devices. Key techniques include lightweight electrocardiogram (ECG) signal quality-aware detectors and noise-aware deep ECG-based methods, emphasizing trustworthiness and efficiency. The trend is towards developing simple automated detection methods and algorithms, such as sequential hypothesis testing, to enhance the accuracy of VT/VF identification in various monitoring devices, including automatic external defibrillators (AEDs) and insertable cardiac monitors.",
+  "gaps_vt vf detection_W4410358824,W4411949664,W4405907512,W4396979291,W2095428098,W2041403021,W7199920585,W2101318308,W102368704,W2120494233": [
+    "While several papers (e.g., \"Lightweight Electrocardiogram Signal Quality-Aware VT/VF Detector...\", \"Noise-Aware Deep ECG-Based VT/VF Detection Method...\", \"A Simple Automated VT/VF Detection Method...\") focus on resource-constrained devices and noise awareness, there is a lack of explicit research on the long-term drift or degradation of sensor performance and its impact on VT/VF detection accuracy in real-world, continuous monitoring scenarios, especially for insertable cardiac monitors mentioned in \"ACCURACY OF AN ARTIFICIAL INTELLIGENCE ALGORITHM IN THE DETECTION AND IDENTIFICATION OF VT/VF IN PATIENTS WITH INSERTABLE CARDIAC MONITORS.\"",
+    "The papers discuss various detection algorithms (e.g., sequential hypothesis testing, deep learning architectures, Chaotic Phase Space Differential Algorithm), but there is an underexplored area regarding the standardized, comparative evaluation of these diverse algorithms specifically in the context of dual-chamber implantable cardioverter-defibrillators, beyond just reducing inappropriate therapy as hinted in \"Critical Analysis of Dual-Chamber Implantable Cardioverter-Defibrillator Arrhythmia Detection,\" to understand their differential performance on specific VT/VF morphologies and noise types.",
+    "Although \"Strategic Programming of Detection and Therapy Parameters in Implantable Cardioverter-Defibrillators Reduces Shocks in Primary Prevention Patients\" touches on programming, there is a missing link in the research explicitly connecting the real-time, on-sensor processing capabilities for VT/VF detection (as explored in \"Analysis and Design of On-sensor ECG Processors...\") with adaptive or personalized detection parameter adjustments within ICDs to optimize both sensitivity and specificity for individual patient physiologies and reduce unnecessary interventions."
+  ],
+  "parse_query_deep reinforcement learning": {
+    "core_terms": [
+      "deep learning",
+      "reinforcement learning"
+    ],
+    "context_terms": [],
+    "domain": "artificial intelligence",
+    "intent": "understand",
+    "must_have": [],
+    "avoid": []
+  },
+  "summary_deep reinforcement learning_W4383112908,W4224220194,W4297964528,W3100366369,W3123212791": "Deep Reinforcement Learning (DRL) combines the powerful feature representation capabilities of deep learning with the decision-making abilities of reinforcement learning, enabling it to solve a wide range of complex, end-to-end sequential decision-making tasks. This integration is considered indispensable for achieving human-level or superhuman AI systems. Current research highlights DRL's ability to tackle problems previously intractable, with transfer learning emerging as a significant trend to further enhance its application.",
+  "litreview_deep reinforcement learning_2203.01387v3,2509.14216v1,2409.06503v1,2108.11510v1,2001.01230v1,W4224220194,W3113776097,W4392156486,W3100366369,W2749604329": {
+    "summary": "Deep Reinforcement Learning (DRL) integrates deep learning's powerful representation capabilities with reinforcement learning's decision-making framework, leading to significant advancements across various domains. This review highlights DRL's foundational concepts, its applications in areas like computer vision and human-robot interaction, and its role in the broader landscape of intelligent systems. Key areas of discussion include the theoretical underpinnings, practical implementations, and the emergence of specialized subfields such as offline reinforcement learning and the use of world models.",
+    "key_themes": [
+      "Integration of deep learning and reinforcement learning",
+      "Applications in computer vision and robotics",
+      "Theoretical frameworks and algorithmic advancements",
+      "Offline reinforcement learning and world models",
+      "Role in intelligent systems and combinatorial optimization"
+    ],
+    "open_questions": [
+      "How can DRL effectively address the challenges of sample efficiency and real-world transferability?",
+      "What are the most promising avenues for unifying DRL with other machine learning paradigms, such as those explored in Banach-Bregman frameworks?",
+      "How can DRL be made more robust and interpretable for critical applications?"
+    ]
+  },
+  "gaps_deep reinforcement learning_W4383112908,W4224220194,W4297964528,W3100366369,W3123212791,W2749604329,W2768956845,W2754517384,W4211171425,W4226453553": [
+    "While 'Transfer Learning in Deep Reinforcement Learning: A Survey' highlights the importance of transfer learning, the provided papers do not delve into specific methodologies or empirical results demonstrating effective transfer learning strategies for DRL across diverse, complex real-world environments, indicating a gap in practical application and evaluation beyond theoretical surveys.",
+    "Several papers mention the integration of deep learning and reinforcement learning for 'human-level or super-human AI systems' and 'powerful end-to-end learning', yet there is a lack of discussion on the inherent challenges of interpretability and explainability in these complex DRL models, especially when applied to critical domains like biological data analysis, leaving a gap in understanding model decisions.",
+    "The papers broadly introduce DRL and its applications, but there is an absence of detailed analysis or proposed solutions for the significant computational resource demands and sample inefficiency often associated with DRL, particularly for achieving robust performance in new or dynamic environments, suggesting an underexplored area in optimizing DRL's practical deployment."
+  ]
 }
