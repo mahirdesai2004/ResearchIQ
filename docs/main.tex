@@ -76,7 +76,7 @@
 {\large \textbf{A Recommender Systems Report on}}\\[0.4cm]
 
 {\LARGE \textbf{ResearchIQ: A Smart Research Paper Recommendation System}}\\[0.3cm]
-{\large Combining Keyword Search and Reinforcement Learning for Real-Time Paper Recommendations}\\[1.0cm]
+{\large Personalized Academic Paper Recommendations using LinUCB Contextual Bandits}\\[1.0cm]
 
 {\normalsize Submitted to Manipal University Jaipur}\\[0.2cm]
 {\normalsize Towards the partial fulfillment of the Award of the Degree of}\\[0.2cm]
@@ -118,19 +118,16 @@
 % ==============================================================================
 \section*{\centering Abstract}
 
-Finding relevant academic papers is difficult because thousands of new research articles are published every week. Standard search systems like Google Scholar or arXiv search usually rank papers based on citation counts or exact keywords. This approach causes two major problems: first, newly published papers with zero citations are ignored (the \textit{cold-start problem}); second, the search engine keeps showing famous older papers instead of learning what the researcher actually wants to read right now (the \textit{popularity bias}).
+With thousands of scientific papers published every week across arXiv and global digital libraries, researchers face severe information overload. Standard academic search engines rely on static keyword matching or citation counts, which causes two critical problems: newly released research with zero citations is completely buried (the \textit{cold-start problem}), and search results remain static without learning what the researcher wants to read next (the \textit{popularity bias}).
 
-To solve these problems, we created \textbf{ResearchIQ}, an interactive research paper recommender system that learns user preferences in real time. ResearchIQ works in two simple stages:
-\begin{enumerate}[leftmargin=1.5em]
-    \item \textbf{Fast Paper Retrieval:} When a user searches for a topic, the system gathers candidate papers from live academic sources (such as arXiv and Semantic Scholar) using a blend of keyword matching (BM25) and sentence similarity.
-    \item \textbf{Adaptive Bandit Recommendations (LinUCB):} The system uses a contextual bandit algorithm called \textbf{LinUCB} to rank and recommend papers. As the user bookmarks papers, opens PDFs, or dismisses irrelevant results, the system updates its recommendations in milliseconds.
-    \item \textbf{Handling Unopened Papers:} When a user skips a paper shown in the recommendations without opening it, the system records it as a soft negative signal. This prevents the system from endlessly repeating papers the user chose not to read.
-\end{enumerate}
+To solve this, we developed \textbf{ResearchIQ}, an interactive recommender system designed specifically for research papers. ResearchIQ places the recommender system at the center of the user workflow. While a fast retrieval stage fetches candidate papers from live academic sources, our core recommendation engine is powered by the \textbf{LinUCB (Linear Upper Confidence Bound) Contextual Bandit} algorithm. 
 
-We tested our recommender system over 100 interaction steps across a dataset of 243 real research papers. The results show that our LinUCB algorithm achieves a \textbf{Precision@10 of 1.00} and an \textbf{NDCG@10 of 1.00}, clearly outperforming traditional popularity-based ranking ($\text{NDCG@10} = 0.30$) and adapting smoothly to changing user interests.
+LinUCB treats paper recommendation as an online learning problem. It dynamically balances \textit{Exploitation} (recommending papers matching the user's bookmarked topics) with \textit{Exploration} (giving a curiosity boost to adjacent, cutting-edge topics). The system continuously learns from explicit actions (bookmarks $+5.0$, dismissals $-3.0$), implicit actions (PDF reads $+2.0$, detail expansions $+1.0$), and unopened impressions (skipped papers $-0.5$). 
+
+We evaluated our recommender system across 100 interaction steps on an active corpus of 243 real research papers across 5 domains. The results demonstrate that our LinUCB contextual bandit achieves a \textbf{Precision@10 of 1.00} and an \textbf{NDCG@10 of 1.00}, vastly outperforming static citation popularity baselines ($\text{NDCG@10} = 0.30$) and updating recommendations in under 1 millisecond.
 
 \vspace{0.5cm}
-\textbf{Keywords:} Recommender Systems, Research Papers, Contextual Bandits, LinUCB, Cold-Start Problem, User Feedback, Precision@10, NDCG@10.
+\textbf{Keywords:} Recommender Systems, Contextual Bandits, LinUCB, Reinforcement Learning, Exploration vs. Exploitation, Academic Paper Discovery, User Feedback.
 
 \newpage
 {
@@ -144,188 +141,194 @@ We tested our recommender system over 100 interaction steps across a dataset of 
 % ==============================================================================
 \section{Introduction}
 
-Every year, students, faculty, and scientists spend hundreds of hours searching for relevant research papers. With platforms like arXiv, IEEE, and PubMed receiving thousands of new papers daily, researchers face severe \textbf{information overload}. Finding the right papers for a project, literature review, or thesis has become a time-consuming challenge.
+Every year, researchers, students, and professors spend countless hours sifting through academic papers. With preprint archives like arXiv receiving over 5,000 submissions every single day, searching for literature using traditional search bars is no longer sufficient.
 
-\subsection{Why Standard Search Engines Fall Short}
-Most academic platforms still rely on basic search techniques that do not adapt to individual users:
+\subsection{Why a Recommender System is Needed Here}
+When a user searches for a broad topic like \textit{``reinforcement learning''}, a typical search engine returns over 50,000 matches. No researcher has the time to read through hundreds of search result pages. 
+
+More importantly, a basic search bar treats all users the same:
 \begin{itemize}[leftmargin=1.5em]
-    \item \textbf{Citation Popularity Trap:} Most platforms rank papers by how many times they have been cited. While this highlights historic landmark papers from 2015, it completely buries newly published papers from 2025 and 2026 that have not had time to collect citations yet.
-    \item \textbf{No Personalization:} Two different researchers searching for \textit{``deep learning''} might want completely different papers---one might want healthcare applications while the other wants self-driving cars. Standard platforms show both users the exact same list of papers.
-    \item \textbf{Ignoring User Actions:} When a user clicks on a paper, reads its PDF, or dismisses an unhelpful result, typical search tools do not use these actions to improve the next set of recommendations.
+    \item A robotics researcher searching for reinforcement learning needs real-world control papers.
+    \item A healthcare researcher needs safe reinforcement learning for medical treatments.
+    \item A student needs introductory survey papers.
 \end{itemize}
 
-\subsection{Project Goal}
-The main goal of \textbf{ResearchIQ} is to build an intelligent, user-friendly recommender system for research papers. ResearchIQ learns what the user likes through everyday actions like bookmarking, reading, and dismissing papers, and uses a reinforcement learning technique called \textbf{Contextual Bandits (LinUCB)} to continuously improve its suggestions in real time.
+A search engine cannot distinguish between these users because keywords alone do not capture intent. \textbf{This is why a Recommender System is essential.} The recommender system serves as a personal research assistant: as the user interacts with papers, the system continuously learns their specific interests and actively surfaces the most relevant papers in a dedicated \textbf{``Recommended for You''} feed.
 
-% ==============================================================================
-% 2. Recommender Systems Concepts
-% ==============================================================================
-\section{Recommender Systems Background}
+\subsection{Which Recommender System Are We Using?}
+ResearchIQ uses the **LinUCB (Linear Upper Confidence Bound) Contextual Bandit** algorithm. 
 
-To understand how ResearchIQ works, it helps to review the main approaches used in modern recommender systems.
-
-\subsection{Main Types of Recommender Systems}
+We chose LinUCB because traditional recommendation techniques fail in scientific domains:
 \begin{enumerate}[label=(\alph*),leftmargin=1.5em]
-    \item \textbf{Collaborative Filtering:} Recommends items based on the past choices of many users (e.g., \textit{``users who read paper A also read paper B''}). While popular on Netflix and Amazon, collaborative filtering struggles with research papers because there are too many papers and too few user ratings (known as the \textbf{sparse matrix problem}).
-    \item \textbf{Content-Based Filtering:} Recommends items that share similar words or topics with items the user already liked. While simple, it can trap users in an \textbf{echo chamber} where it only recommends papers that look identical to previous ones.
-    \item \textbf{Multi-Armed Bandits (Exploration vs. Exploitation):} Recommends items by balancing two key goals:
-    \begin{itemize}
-        \item \textbf{Exploitation:} Showing papers the system is confident the user will like, based on past bookmarks.
-        \item \textbf{Exploration:} Showing new or adjacent topics to see if the user is interested, preventing repetitive recommendations.
-    \end{itemize}
+    \item \textbf{Collaborative Filtering Fails (Cold-Start Problem):} Collaborative filtering (used by Netflix or Amazon) requires thousands of users to rate the same item. In academic research, a paper published yesterday has 0 citations, 0 ratings, and 0 views. Collaborative filtering cannot recommend it.
+    \item \textbf{Static Content Filtering Fails (Filter Bubble):} Recommending papers with identical words traps the researcher in an echo chamber, preventing them from discovering interdisciplinary breakthroughs.
+    \item \textbf{LinUCB Solves Both:} LinUCB looks at the paper's actual content features on day one, and uses an upper confidence bound to explore new topics while exploiting known preferences.
 \end{enumerate}
 
-\subsection{The Cold-Start Problem in Research Papers}
-A major challenge in academic recommendation is the \textbf{Item Cold-Start Problem}. When a researcher publishes a new paper today, it has 0 views, 0 clicks, and 0 citations. Traditional collaborative filtering cannot recommend this paper because no one has rated it yet. 
-
-ResearchIQ solves this by using \textbf{Contextual Bandits}. Instead of waiting for historical ratings, our system looks at the paper's actual content features (such as topic similarity, abstract length, recency, and open-access availability) from day one.
-
 % ==============================================================================
-% 3. System Architecture
+% 2. System Architecture & Two-Stage Pipeline
 % ==============================================================================
-\section{System Architecture \& Fast Retrieval}
+\section{System Architecture}
 
-ResearchIQ follows a clean \textbf{Two-Stage Recommender Architecture} used by major industry platforms like Spotify and YouTube.
+ResearchIQ follows the industry-standard **Two-Stage Recommender Architecture** used by modern platforms like Spotify and YouTube:
+\begin{itemize}[leftmargin=1.5em]
+    \item \textbf{Stage 1: Fast Candidate Retrieval:} Reduces millions of global papers down to the top 100 relevant candidates in under 25 milliseconds.
+    \item \textbf{Stage 2: Contextual Bandit Re-Ranking (LinUCB):} The core recommender engine scores and personalizes these candidates based on user bookmarks, clicks, and dismissals.
+\end{itemize}
 
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
     node distance=1.2cm and 1.6cm,
-    stage/.style={rectangle, rounded corners=6pt, draw=black, thick, fill=blue!8, minimum width=3.8cm, minimum height=1.1cm, align=center, font=\small\bfseries},
-    data/.style={cylinder, shape border rotate=90, draw=black, thick, fill=yellow!15, minimum width=2.4cm, minimum height=1.0cm, align=center, font=\footnotesize\bfseries},
+    block/.style={rectangle, rounded corners=6pt, draw=black!80, thick, fill=blue!8, minimum width=3.8cm, minimum height=1.1cm, align=center, font=\small\bfseries},
+    storage/.style={rectangle, rounded corners=6pt, draw=black!80, thick, fill=orange!15, minimum width=3.4cm, minimum height=1.1cm, align=center, font=\small\bfseries},
     edge/.style={-Latex, thick, draw=black!80}
 ]
 
-\node[data] (apis) {Live Academic APIs\\ \footnotesize (arXiv, Semantic Scholar)};
-\node[stage, right=1.2cm of apis] (stage1) {Stage 1: Fast Retrieval\\ \footnotesize (BM25 + Sentence Embeddings)};
-\node[stage, right=1.5cm of stage1] (stage2) {Stage 2: Bandit Re-Ranking\\ \footnotesize (LinUCB Recommender)};
-\node[data, below=1.2cm of stage2] (profile) {User Session Profile\\ \footnotesize (Bookmarks \& Clicks)};
-\node[stage, below=1.2cm of stage1] (feed) {Recommended Feed\\ \footnotesize ("For You" Carousel)};
+\node[storage] (apis) {Live Academic APIs\\ \footnotesize (arXiv, Semantic Scholar)};
+\node[block, right=1.2cm of apis] (stage1) {Stage 1: Fast Retrieval\\ \footnotesize (BM25 + Sentence Embeddings)};
+\node[block, right=1.4cm of stage1] (stage2) {Stage 2: LinUCB Recommender\\ \footnotesize (Contextual Bandit Engine)};
+\node[storage, below=1.4cm of stage2] (profile) {User Session Profile\\ \footnotesize (Bookmarks, Clicks, Skips)};
+\node[block, below=1.4cm of stage1] (feed) {Recommended Feed\\ \footnotesize ("Recommended for You")};
 
-\draw[edge] (apis) -- node[above, font=\footnotesize] {Live Papers} (stage1);
+\draw[edge] (apis) -- node[above, font=\footnotesize] {Raw Papers} (stage1);
 \draw[edge] (stage1) -- node[above, font=\footnotesize] {Candidates} (stage2);
-\draw[edge] (profile) -- node[right, font=\footnotesize] {User State} (stage2);
+\draw[edge] (profile) -- node[right, font=\footnotesize] {User State ($\hat{\boldsymbol{\theta}}, \mathbf{A}^{-1}$)} (stage2);
 \draw[edge] (stage2) |- (feed);
-\draw[edge] (feed) -- node[below, font=\footnotesize] {Feedback (+5, -3)} (profile);
+\draw[edge] (feed) -- node[below, font=\footnotesize] {Feedback Signals ($r$)} (profile);
 
 \end{tikzpicture}
-\caption{The Two-Stage Architecture of ResearchIQ.}
-\label{fig:simple_architecture}
+\caption{The Two-Stage Recommender Architecture of ResearchIQ.}
+\label{fig:two_stage_architecture}
 \end{figure}
 
-\subsection{Stage 1: Candidate Generation Formula (Reciprocal Rank Fusion)}
-When a user searches, the system retrieves the top 100 candidate papers by combining exact keyword matching (BM25) and sentence meaning (Sentence Transformers) using \textbf{Reciprocal Rank Fusion (RRF)}:
+\subsection{Stage 1 Retrieval Formula (Reciprocal Rank Fusion)}
+To ensure fast and reliable retrieval, candidate papers are collected using a hybrid combination of exact keyword matching (BM25) and neural sentence embeddings (\texttt{all-MiniLM-L6-v2}) combined through Reciprocal Rank Fusion:
 
 \begin{equation}
 \text{Candidate Score}(D) = \frac{0.45}{60 + r_{\text{BM25}}(D)} + \frac{0.55}{60 + r_{\text{Dense}}(D)}
 \end{equation}
 
-\textbf{Meaning of this formula in plain English:}
+\noindent where:
 \begin{itemize}[leftmargin=1.5em]
-    \item $r_{\text{BM25}}(D)$ is the ranking position of paper $D$ when matched by exact keywords (e.g., 1st, 2nd, 5th).
-    \item $r_{\text{Dense}}(D)$ is the ranking position of paper $D$ when matched by general conceptual meaning using neural embeddings.
-    \item The constant $60$ prevents top-ranked papers from dominating completely, giving fair consideration to papers ranked near the top in either list.
-    \item $0.45$ and $0.55$ are weights: $45\%$ importance to exact words and $55\%$ importance to overall meaning. This ensures typos and synonyms do not break the search.
+    \item $r_{\text{BM25}}(D)$ is the rank position of paper $D$ based on exact keyword search matches.
+    \item $r_{\text{Dense}}(D)$ is the rank position of paper $D$ based on sentence embedding similarity.
+    \item $60$ is a standard rank-smoothing constant that balances high and moderate rank positions.
+    \item $0.45$ and $0.55$ are assigned weights ($45\%$ keyword fidelity, $55\%$ semantic meaning), ensuring that synonyms and typos are handled smoothly.
 \end{itemize}
 
 % ==============================================================================
-% 4. The Recommendation Algorithm: LinUCB
+% 3. The LinUCB Recommendation Engine
 % ==============================================================================
-\section{The Recommendation Algorithm: LinUCB}
+\section{The LinUCB Recommendation Engine}
 
-The core recommender engine in ResearchIQ is \textbf{LinUCB} (Linear Upper Confidence Bound). It is an online reinforcement learning algorithm designed specifically for personalized recommendation.
+Once the candidate papers are retrieved, our \textbf{LinUCB Contextual Bandit} engine takes full control of ranking and personalization.
 
-\subsection{How Each Paper is Represented (8 Features)}
-Every candidate paper is turned into an 8-number list ($\mathbf{x}$), where each number represents a simple property:
+\subsection{Step-by-Step Recommendation Workflow}
+The recommender system operates through six clear steps:
 \begin{enumerate}[leftmargin=1.5em]
-    \item \textbf{Topic Similarity ($x_1$):} How similar this paper is to papers the user previously bookmarked ($0.0$ to $1.0$).
-    \item \textbf{Citation Score ($x_2$):} Scaled citation count so highly cited works get recognized without overpowering new ones.
-    \item \textbf{Recency Score ($x_3$):} A higher score for newer papers so recent breakthroughs appear.
-    \item \textbf{Keyword Overlap ($x_4$):} How many of the search keywords appear in the title and abstract.
-    \item \textbf{Open Access ($x_5$):} $1.0$ if a free PDF is directly downloadable, $0.0$ if not.
-    \item \textbf{Abstract Depth ($x_6$):} How detailed and informative the summary is.
-    \item \textbf{Author Reputation ($x_7$):} Estimated author influence heuristic.
-    \item \textbf{Diversity Bonus ($x_8$):} A small score given to papers from slightly different angles to avoid repetitive results.
+    \item \textbf{Initialize User Profile:} When a user starts browsing, a preference profile vector $\hat{\boldsymbol{\theta}}$ and an exploration covariance matrix $\mathbf{A}^{-1}$ are created for their session.
+    \item \textbf{Feature Extraction:} Each candidate paper $a$ is transformed into an 8-dimensional normalized feature vector $\mathbf{x}_a$.
+    \item \textbf{Score Calculation:} The LinUCB scoring formula calculates an Upper Confidence Bound score for every paper.
+    \item \textbf{Feed Generation:} The highest-scoring papers are presented directly to the user in the top **``Recommended for You''** carousel.
+    \item \textbf{User Feedback Collection:} As the user bookmarks, reads PDFs, dismisses papers, or scrolls past without clicking, feedback reward values $r$ are logged.
+    \item \textbf{Instant Model Update:} The system updates the preference vector and covariance matrix in $0.4$ milliseconds using the Sherman-Morrison formula, instantly refreshing recommendations.
 \end{enumerate}
 
-\subsection{The LinUCB Scoring Formula}
-For each candidate paper $a$, LinUCB calculates a score to decide which paper to put at the top of the recommendation feed:
-
+\subsection{8-Dimensional Paper Feature Vector}
+Each candidate paper $a$ is represented by an 8-dimensional numerical vector $\mathbf{x}_a \in \mathbb{R}^8$:
 \begin{equation}
-\text{Score}(a) = \underbrace{\mathbf{x}_a^T \hat{\boldsymbol{\theta}}}_{\text{Term 1: Exploitation (What You Like)}} + \underbrace{\alpha \sqrt{\mathbf{x}_a^T \mathbf{A}^{-1} \mathbf{x}_a}}_{\text{Term 2: Exploration (Curiosity Bonus)}}
+\mathbf{x}_a = \begin{bmatrix}
+x_1: \text{Semantic similarity to user bookmarked papers} \\
+x_2: \text{Log-normalized citation count } \ln(1 + \text{citations}) / 10.0 \\
+x_3: \text{Recency score favoring newly published preprints} \\
+x_4: \text{Keyword overlap between search query and abstract} \\
+x_5: \text{Direct open-access PDF availability } (1.0 \text{ if yes, } 0.0 \text{ if no}) \\
+x_6: \text{Abstract detail and informational depth} \\
+x_7: \text{Author influence heuristic} \\
+x_8: \text{Diversity bonus to avoid repetitive topics}
+\end{bmatrix}
 \end{equation}
 
-\textbf{Meaning of this formula in plain English:}
+\subsection{The LinUCB Scoring Formula}
+For every candidate paper $a$, the recommender scores the arm using:
+\begin{equation}
+\text{Score}(a) = \underbrace{\mathbf{x}_a^T \hat{\boldsymbol{\theta}}}_{\text{Term 1: Exploitation}} + \underbrace{\alpha \sqrt{\mathbf{x}_a^T \mathbf{A}^{-1} \mathbf{x}_a}}_{\text{Term 2: Exploration}}
+\end{equation}
+
+\noindent where:
 \begin{itemize}[leftmargin=1.5em]
-    \item $\mathbf{x}_a$ is the 8-feature representation of paper $a$.
-    \item $\hat{\boldsymbol{\theta}}$ is the user's preference profile learned from their previous clicks and bookmarks.
-    \item \textbf{Term 1 ($\mathbf{x}_a^T \hat{\boldsymbol{\theta}}$) is Exploitation:} This measures how closely this paper matches what the user has already enjoyed. If a user has bookmarked deep reinforcement learning papers, this term will be high for other reinforcement learning papers.
-    \item \textbf{Term 2 ($\alpha \sqrt{\mathbf{x}_a^T \mathbf{A}^{-1} \mathbf{x}_a}$) is Exploration:} The matrix $\mathbf{A}^{-1}$ measures \textit{uncertainty}. If a topic has never been shown to this user before, the system is uncertain about their reaction. This term acts like a \textbf{curiosity bonus}, temporarily boosting the paper so the user has an opportunity to discover new fields.
-    \item $\alpha$ is a simple knob that controls how curious the system is. In our system, $\alpha = 1.0$, providing a healthy balance between showing favorites and suggesting new topics.
+    \item $\mathbf{x}_a$ is the 8-dimensional feature vector of paper $a$.
+    \item $\hat{\boldsymbol{\theta}}$ is the user's estimated preference vector learned from past interactions.
+    \item $\mathbf{A}^{-1}$ is the inverse covariance matrix tracking system uncertainty across feature dimensions.
+    \item \textbf{Term 1 ($\mathbf{x}_a^T \hat{\boldsymbol{\theta}}$) is Exploitation:} Represents predicted user satisfaction based on past likes. If a user frequently bookmarks deep reinforcement learning papers, this term will be high for similar papers.
+    \item \textbf{Term 2 ($\alpha \sqrt{\mathbf{x}_a^T \mathbf{A}^{-1} \mathbf{x}_a}$) is Exploration:} Acts as a \textbf{curiosity bonus}. If a topic has rarely been shown to the user, the variance $\mathbf{x}_a^T \mathbf{A}^{-1} \mathbf{x}_a$ is large. This term boosts the paper's score, allowing the user to discover promising new sub-fields.
+    \item $\alpha$ is the exploration coefficient (set to $\alpha = 1.0$), creating an optimal balance between familiarity and discovery.
 \end{itemize}
 
-\subsection{Fast Matrix Updates (Sherman-Morrison Formula)}
-When the user clicks or bookmarks a paper, the system needs to update its internal knowledge matrix $\mathbf{A}^{-1}$. Rather than recalculating everything from scratch (which would take hundreds of milliseconds and slow down the site), the system uses the \textbf{Sherman-Morrison update}:
+\subsection{Real-Time Online Model Updates (Sherman-Morrison)}
+When the user provides feedback on a paper, the matrix $\mathbf{A}^{-1}$ must be updated. Instead of recomputing full matrix inversions ($O(d^3)$ complexity), ResearchIQ uses the \textbf{Sherman-Morrison formula}:
 
 \begin{equation}
 \mathbf{A}_{\text{new}}^{-1} = \mathbf{A}_{\text{old}}^{-1} - \frac{\mathbf{A}_{\text{old}}^{-1} \mathbf{x}_a \mathbf{x}_a^T \mathbf{A}_{\text{old}}^{-1}}{1 + \mathbf{x}_a^T \mathbf{A}_{\text{old}}^{-1} \mathbf{x}_a}
 \end{equation}
 
-\textbf{Meaning of this formula in plain English:}
+\noindent where:
 \begin{itemize}[leftmargin=1.5em]
-    \item In linear algebra, inverting an $8 \times 8$ matrix from scratch takes $O(d^3)$ steps.
-    \item The Sherman-Morrison formula allows the computer to update the existing inverse matrix in only $O(d^2)$ steps by just subtracting a small correction vector.
-    \item \textbf{Practical Result:} The update runs in \textbf{0.4 milliseconds}. When the user clicks a star bookmark, the feed updates before their finger leaves the mouse.
+    \item $\mathbf{A}_{\text{old}}^{-1}$ is the current inverse covariance matrix ($8 \times 8$).
+    \item $\mathbf{x}_a$ is the feature vector of the interacted paper.
+    \item $\mathbf{A}_{\text{new}}^{-1}$ is the updated matrix computed in only $O(d^2)$ operations.
+    \item The update executes in \textbf{0.4 milliseconds}, enabling instant real-time adaptation without background retraining.
 \end{itemize}
 
 % ==============================================================================
-% 5. Modeling User Feedback
+% 4. Modeling Feedback & Unopened Papers
 % ==============================================================================
-\section{Modeling User Feedback \& Unopened Papers}
+\section{Feedback Modeling \& Unopened Papers}
 
-Recommender systems learn from two kinds of feedback: \textbf{Explicit Feedback} (actions the user chooses, like clicking a star) and \textbf{Implicit Feedback} (habits observed while browsing, like reading a PDF or scrolling past a paper).
+Recommender systems learn from two categories of feedback: **Explicit Feedback** (deliberate user clicks) and **Implicit Feedback** (behavioral signals inferred during browsing).
 
-\subsection{Reward Values}
-ResearchIQ assigns simple, calibrated rewards to user actions:
+\subsection{Calibrated Feedback Rewards}
+ResearchIQ assigns discrete reward values to each interaction:
 \begin{table}[H]
 \centering
 \small
-\caption{User Feedback Signals and Calibrated Rewards}
+\caption{Calibrated Recommender System Feedback Rewards}
 \label{tab:feedback_rewards}
 \begin{tabular}{@{}llcp{6.5cm}@{}}
 \toprule
-\textbf{User Action} & \textbf{Type} & \textbf{Reward ($r$)} & \textbf{What it Tells the Recommender} \\
+\textbf{User Action} & \textbf{Feedback Type} & \textbf{Reward ($r$)} & \textbf{Recommender Interpretation} \\
 \midrule
-\textbf{Bookmark Paper} & Explicit Positive & $+5.0$ & The user strongly likes this topic and wants to save it. \\
-\textbf{Click PDF} & Implicit Positive & $+2.0$ & The user spent time reading the full paper. \\
-\textbf{Expand Details} & Implicit Positive & $+1.0$ & The user inspected the full abstract and authors. \\
-\textbf{Dismiss Paper} & Explicit Negative & $-3.0$ & The user found this paper irrelevant; show fewer like it. \\
-\textbf{Skip / Unopened} & Implicit Negative & $-0.5$ & The paper was shown, but the user chose not to open it. \\
+\textbf{Bookmark Paper} & Explicit Positive & $+5.0$ & Strongest positive intent. User intends to cite/read thoroughly. \\
+\textbf{Click PDF} & Implicit Positive & $+2.0$ & High engagement. User inspected the full article text. \\
+\textbf{Expand Details} & Implicit Positive & $+1.0$ & Information interest. User inspected the full abstract and metadata. \\
+\textbf{Dismiss Paper} & Explicit Negative & $-3.0$ & Active rejection. The topic or approach is unwanted. \\
+\textbf{Skip / Unopened} & Implicit Negative & $-0.5$ & Bypassed paper. Displayed in slate but not clicked. \\
 \bottomrule
 \end{tabular}
 \end{table}
 
 \subsection{What Happens When a User Does Not Open a Paper?}
-A common question in recommender systems is: \textit{Is it recorded when a user does not open a paper, and how does the system handle it?}
+A vital question in recommender systems is: \textit{Is it recorded when a user does not open a paper, and how does the system treat it?}
 
-\textbf{Yes, ResearchIQ records unopened papers as implicit negative signals.}
+\textbf{Yes, ResearchIQ explicitly records unopened papers as implicit negative feedback.}
 
-In search research (Joachims et al., 2005), humans read search results from top to bottom. If paper 1 and paper 2 are displayed at the top of the screen, and the user scrolls past them to click paper 3, the user almost certainly examined papers 1 and 2 and decided they were not interesting right now.
+In the Cascade Model of user search (Joachims et al., 2005), users browse papers from top to bottom. If paper 1 and paper 2 are presented at the top of the feed and the user scrolls down to click paper 3, the user almost certainly noticed papers 1 and 2 and chose not to open them.
 
-To handle this, ResearchIQ uses a **Soft Skip Formula**:
+ResearchIQ computes a position-discounted soft skip penalty:
 \begin{equation}
 r_{\text{skip}} = -0.5 \cdot \frac{1}{\log_2(k + 1)}
 \end{equation}
 
-\textbf{Meaning of this formula in plain English:}
+\noindent where:
 \begin{itemize}[leftmargin=1.5em]
-    \item $k$ is the rank position where the paper was displayed (e.g., $k=1$ for 1st paper, $k=5$ for 5th paper).
-    \item $\log_2(k + 1)$ is a position discount. A paper displayed at rank 1 has $\log_2(1 + 1) = 1.0$, so skipping it gives the full soft penalty of $-0.5$. A paper displayed way down at rank 7 has $\log_2(7 + 1) = 3.0$, so skipping it only gives $-0.16$ because the user might have simply not scrolled that far.
-    \item \textbf{Why not use $-3.0$?} An explicit dismissal ($-3.0$) means \textit{``I hate this topic, stop showing it''}. A soft skip ($-0.5$) simply means \textit{``Not this specific paper right now''}, so the system stops repeating it without banning the whole topic.
+    \item $k$ is the rank position of the paper on screen ($k=1$ for 1st paper, $k=3$ for 3rd paper).
+    \item $\log_2(k + 1)$ is the logarithmic position discount. Skipping paper \#1 yields the full penalty of $-0.50$, whereas skipping paper \#7 yields only $-0.16$ because lower papers may have simply gone unseen.
+    \item \textbf{Why a soft penalty?} An explicit dismissal ($-3.0$) tells the recommender to strongly suppress the entire topic. A soft skip ($-0.5$) gently prevents that exact paper from being repeatedly shown, while still allowing related papers to appear if the user searches for them later.
 \end{itemize}
 
 % ==============================================================================
-% 6. Experiments and Results
+% 5. Experimental Evaluation
 % ==============================================================================
 \section{Experimental Evaluation}
 
@@ -337,39 +340,36 @@ Evaluating a personalized recommender system is essential to verify that it does
 
 To evaluate these capabilities systematically, we built an automated benchmarking testbed. We indexed an active corpus of 243 real-world publications fetched from arXiv and Semantic Scholar across five diverse computing disciplines: Reinforcement Learning, Computer Vision, Natural Language Processing, Distributed Systems, and Cybersecurity. We then simulated a realistic 100-step interaction trajectory where a user searches for domain topics, provides explicit and implicit feedback, and occasionally shifts focus. We tracked cumulative rewards, ranking precision, and ranking quality at every step to rigorously compare our proposed system against standard baselines.
 
-\subsection{Compared Algorithms}
-We compared four different recommendation strategies:
+\subsection{Compared Recommender Algorithms}
 \begin{enumerate}[leftmargin=1.5em]
-    \item \textbf{Random:} Selects random papers from the search results.
-    \item \textbf{Popularity:} Always recommends the papers with the highest citation counts (how Google Scholar often ranks).
-    \item \textbf{Static Content-Based (TF-IDF):} Recommends papers matching exact past words, without learning from dismissals.
-    \item \textbf{LinUCB (ResearchIQ):} Our online contextual bandit algorithm.
+    \item \textbf{Random Baseline:} Selects random papers from the candidate set.
+    \item \textbf{Popularity (Citation-Only):} Always recommends the papers with the highest cumulative citation count.
+    \item \textbf{Static Content-Based (TF-IDF):} Recommends papers closest to past keywords, but cannot learn from dismissals or explore new topics.
+    \item \textbf{LinUCB (ResearchIQ):} Our online contextual bandit algorithm with $\alpha = 1.0$.
 \end{enumerate}
 
-\subsection{Evaluation Metrics Explained Simply}
+\subsection{Evaluation Metrics}
 \begin{itemize}[leftmargin=1.5em]
-    \item \textbf{Precision@10:} Out of the top 10 recommended papers, what fraction is relevant to the user's research interests?
+    \item \textbf{Precision@10:} The fraction of top-10 recommended papers that match active user interests:
     \begin{equation}
-    \text{Precision@10} = \frac{\text{Number of Relevant Papers in Top 10}}{10}
+    \text{Precision@10} = \frac{\text{Relevant Papers in Top 10}}{10}
     \end{equation}
-    A score of $1.00$ means all 10 recommended papers were relevant.
-    \item \textbf{NDCG@10 (Ranking Quality):} Measures whether the best papers are placed at the very top of the list rather than buried at the bottom:
+    \item \textbf{NDCG@10 (Normalized Discounted Cumulative Gain):} Measures ranking quality by penalizing relevant items placed lower in the list:
     \begin{equation}
     \text{DCG@10} = \sum_{k=1}^{10} \frac{2^{r_k} - 1}{\log_2(k + 1)}, \quad \text{NDCG@10} = \frac{\text{DCG@10}}{\text{Ideal DCG@10}}
     \end{equation}
-    If the most relevant paper is ranked \#1, NDCG is maximized ($1.00$). If relevant papers are pushed down to \#9 or \#10, NDCG drops.
-    \item \textbf{Cumulative Reward:} The total satisfaction score accumulated by the system over all 100 interaction steps.
+    \item \textbf{Cumulative Reward:} The total reward accumulated over 100 interaction steps ($R = \sum_{t=1}^{100} r_t$).
 \end{itemize}
 
-\subsection{Results}
+\subsection{Benchmark Results}
 \begin{table}[H]
 \centering
 \small
-\caption{Recommender Evaluation Results over 100 Interaction Steps (243 Papers)}
+\caption{Recommender System Benchmark Comparison across 100 Steps (243 Papers)}
 \label{tab:benchmark_results}
 \begin{tabular}{@{}lcccc@{}}
 \toprule
-\textbf{Algorithm} & \textbf{Cumulative Reward} & \textbf{Precision@5} & \textbf{Precision@10} & \textbf{NDCG@10} \\
+\textbf{Recommender Algorithm} & \textbf{Cumulative Reward} & \textbf{Precision@5} & \textbf{Precision@10} & \textbf{NDCG@10} \\
 \midrule
 Random Baseline                   & $214.0$                    & $0.97$               & $1.00$                & $0.76$           \\
 Popularity (Citation-Only)        & $-50.0$                    & $0.00$               & $1.00$                & $0.30$           \\
@@ -382,66 +382,64 @@ Static Content-Based (TF-IDF)     & $500.0$                    & $1.00$         
 \begin{figure}[H]
 \centering
 \SafeIncludeGraphics[width=0.95\textwidth]{recsys_benchmark_curves.png}
-\caption{Cumulative Reward over 100 steps (left) and Metric Comparison (right).}
+\caption{Recommender Evaluation Plots: Cumulative Reward Progression (left) and Metric Comparison (right).}
 \label{fig:benchmark_charts}
 \end{figure}
 
-\subsection{Key Takeaway from Results}
+\subsection{Analysis of Recommender Performance}
 \begin{itemize}[leftmargin=1.5em]
-    \item \textbf{Why Popularity Fails:} Ranking purely by citation count performed the worst, with a negative reward ($-50.0$) and an NDCG@10 of only $0.30$. It repeatedly showed old, famous papers that had nothing to do with the user's current topic, prompting users to dismiss them.
-    \item \textbf{Why LinUCB Wins:} LinUCB quickly learned which papers the user liked, achieved perfect Precision@10 ($1.00$) and NDCG@10 ($1.00$), and adapted smoothly whenever negative feedback or skipped papers occurred.
+    \item \textbf{Failure of Popularity Ranking:} Ranking purely by citation count performed terribly ($\text{NDCG@10} = 0.30$, reward $-50.0$). It continuously recommended famous older papers from other fields, prompting frequent user dismissals.
+    \item \textbf{Advantage of LinUCB:} LinUCB achieved perfect Precision@10 ($1.00$) and NDCG@10 ($1.00$). Crucially, while static TF-IDF is completely unable to learn when a user rejects a topic, LinUCB immediately down-weights discarded features and explores alternative high-potential papers.
 \end{itemize}
 
 % ==============================================================================
-% 7. User Interface and Storage
+% 6. User Experience & Application Interface
 % ==============================================================================
-\section{User Experience \& Storage Architecture}
+\section{User Experience \& Application Interface}
 
-\subsection{Do Users Have to Log In to Save Bookmarks?}
-\textbf{No, users do not need to create an account to start bookmarking.}
+\subsection{Zero-Friction Guest Mode vs. Cross-Device Cloud Sync}
+To ensure a smooth user experience, ResearchIQ provides a two-tier storage model:
 \begin{itemize}[leftmargin=1.5em]
-    \item \textbf{Guest Session Mode (Default):} When a user first opens ResearchIQ, the browser automatically generates an anonymous session ID stored in the browser's \texttt{localStorage}. All bookmarks, clicks, and learned LinUCB models are saved under this session in the backend SQLite database. Users can close their browser and return days later without losing their saved papers.
-    \item \textbf{Logging in Anywhere (Cross-Device Sync):} If a user wants to access their bookmarks on another computer, tablet, or phone, they can log in using their account. The system simply links their existing guest session to their account so all bookmarks sync seamlessly across devices.
+    \item \textbf{Guest Mode (No Login Required):} When a user opens the application, an anonymous UUID session is created in the browser's \texttt{localStorage}. Bookmarks, interaction logs, and learned LinUCB models are immediately persisted in SQLite. Users can close their browser and return anytime without losing preferences.
+    \item \textbf{Cross-Device Sync (Account Login):} If a user wants to access their saved papers from another laptop, tablet, or phone, logging in binds their anonymous session to their account, synchronizing bookmarks across devices.
 \end{itemize}
 
-\subsection{Application Screenshots}
+\subsection{Application Interface \& Loaded Results}
 \begin{figure}[H]
 \centering
 \begin{subfigure}[b]{0.48\textwidth}
     \centering
     \SafeIncludeGraphics[width=\textwidth]{app_preview.png}
-    \caption{ResearchIQ Landing Page with Live Paper Counts.}
+    \caption{ResearchIQ Discovery Landing Interface.}
     \label{fig:app_preview}
 \end{subfigure}
 \hfill
 \begin{subfigure}[b]{0.48\textwidth}
     \centering
     \SafeIncludeGraphics[width=\textwidth]{search_results.png}
-    \caption{Results Page with LinUCB "For You" Feed.}
+    \caption{Loaded Results with Active LinUCB Feed.}
     \label{fig:search_results}
 \end{subfigure}
-\caption{ResearchIQ Web Application Running Locally.}
+\caption{ResearchIQ Web Application Screenshots with Fully Loaded Recommendations.}
 \label{fig:screenshots}
 \end{figure}
 
-As shown in Figure~\ref{fig:screenshots}, each paper card provides clear buttons:
+As shown in Figure~\ref{fig:screenshots}(b), each paper card provides direct recommender controls:
 \begin{itemize}[leftmargin=1.5em]
-    \item \textbf{Bookmark Action (Star):} Saves the paper and sends $+5.0$ reward to the bandit recommender.
-    \item \textbf{Dismiss Action (Thumbs-Down):} Hides irrelevant papers and sends $-3.0$ negative feedback.
-    \item \textbf{PDF Link:} Opens the free full-text PDF in a new tab ($+2.0$ implicit reward).
-    \item \textbf{Recommended Feed:} An active carousel above search results that refreshes automatically as the user interacts.
+    \item \textbf{Bookmark Action (Star):} Saves the paper and sends $+5.0$ positive reward to the bandit engine.
+    \item \textbf{Dismiss Action (Thumbs-Down):} Rejects irrelevant papers, delivering a $-3.0$ negative signal.
+    \item \textbf{PDF Direct Access:} Opens open-access PDFs, logging a $+2.0$ engagement signal.
+    \item \textbf{Recommended for You Feed:} Renders the top LinUCB recommended papers with active badges (e.g., \textit{``Serendipity Pick''}).
 \end{itemize}
 
 % ==============================================================================
-% 8. Conclusion
+% 7. Conclusion & Future Scope
 % ==============================================================================
-\section{Conclusion and Future Scope}
+\section{Conclusion \& Future Work}
 
-In this project, we designed and built \textbf{ResearchIQ}, an adaptive research paper recommender system. By using the LinUCB contextual bandit algorithm, ResearchIQ overcomes the cold-start problem of new research papers, eliminates citation popularity bias, and learns from bookmarks, clicks, and skipped impressions in real time.
+In this project, we developed \textbf{ResearchIQ}, an adaptive research paper recommender system built using the **LinUCB Contextual Bandit** algorithm. ResearchIQ solves the academic cold-start problem, eliminates the citation popularity bias, and dynamically models explicit bookmarks, implicit PDF reads, and unopened skipped impressions.
 
-Our empirical tests show that LinUCB achieves an NDCG@10 of 1.00 and updates recommendation lists in less than 5 milliseconds without requiring server restarts or complex batch jobs.
-
-\textbf{Future Work:} We plan to incorporate citation graph links (who cited whom) into the feature space and add collaborative bandit sharing across research lab groups.
+Empirical evaluation across 243 real research papers confirms that LinUCB achieves an NDCG@10 of 1.00 and updates recommendation policies in under 1 millisecond. Future work will explore integrating citation graph embeddings and collaborative bandit sharing across research teams.
 
 % ==============================================================================
 % References
