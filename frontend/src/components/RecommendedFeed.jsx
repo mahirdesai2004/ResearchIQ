@@ -21,7 +21,7 @@ export default function RecommendedFeed({ currentTopic = '', onAnalyze }) {
     setLoading(true);
     try {
       const sId = getSessionId();
-      const res = await getPersonalizedRecommendations(sId, currentTopic, 8, false);
+      const res = await getPersonalizedRecommendations(sId, currentTopic, 10, false);
       setRecommendations(res.recommendations || []);
     } catch (err) {
       console.warn('Failed to fetch personalized recommendations:', err);

@@ -343,10 +343,34 @@ def get_personalized_recommendations(
     model = get_model(session_id)
     ranked = model.rank_candidates(candidates, user_state, topic)
 
+    # Balanced Exploitation-Exploration Slate:
+    # Separate candidates into exploitation (matched) and exploration (novel/serendipity)
+    exploit_papers = [p for p in ranked if p.get("rec_type") == "exploitation"]
+    explore_papers = [p for p in ranked if p.get("rec_type") == "exploration"]
+
+    # Guarantee that neither category is starved in the top-K slate
+    # Reserve at least 30-40% of slots (min 3) for exploration so 'Novel' tab is always populated
+    n_explore = min(max(3, k // 3), len(explore_papers))
+    n_exploit = min(k - n_explore, len(exploit_papers))
+
+    slate = exploit_papers[:n_exploit] + explore_papers[:n_explore]
+
+    # Fill any remaining slots if one list had fewer items than allocated
+    seen_ids = {p["id"] for p in slate}
+    for p in ranked:
+        if len(slate) >= k:
+            break
+        if p["id"] not in seen_ids:
+            slate.append(p)
+            seen_ids.add(p["id"])
+
+    # Sort final slate by UCB score so best overall recommendations appear at the top
+    slate.sort(key=lambda p: p.get("ucb_score", 0), reverse=True)
+
     logger.info(
-        f"LinUCB ranked {len(ranked)} candidates for session '{session_id}' "
-        f"(exploit: {sum(1 for p in ranked[:k] if p['rec_type']=='exploitation')}, "
-        f"explore: {sum(1 for p in ranked[:k] if p['rec_type']=='exploration')})"
+        f"LinUCB slate composed for session '{session_id}' "
+        f"(exploit: {sum(1 for p in slate if p['rec_type']=='exploitation')}, "
+        f"explore: {sum(1 for p in slate if p['rec_type']=='exploration')})"
     )
 
-    return ranked[:k]
+    return slate
