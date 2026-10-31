@@ -41,7 +41,7 @@
 \setlength{\cftbeforesecskip}{2pt}
 \renewcommand{\cftsecfont}{\small\bfseries}
 \renewcommand{\cftsecpagefont}{\small}
-\usepackage[final]{microtype}
+% Note: microtype is omitted to prevent pdfLaTeX input stack size overflow in TikZ
 \sloppy
 \setlength{\emergencystretch}{3em}
 \geometry{a4paper, margin=1in}
@@ -49,6 +49,13 @@
 \setlength{\parindent}{0pt}
 \setlength{\floatsep}{8pt}
 \setlength{\textfloatsep}{8pt}
+
+% Fix for pdfLaTeX + TikZ font recursion
+\makeatletter
+\ifdefined\pgf@selectfontorig
+  \let\pgf@selectfontorig\selectfont
+\fi
+\makeatother
 
 % Fail-safe graphic loader
 \newcommand{\SafeIncludeGraphics}[2][width=\linewidth]{%
@@ -176,31 +183,31 @@ ResearchIQ follows an end-to-end \textbf{Two-Stage Recommender Architecture} tha
 \centering
 \begin{tikzpicture}[
     node distance=1.0cm and 1.4cm,
-    source/.style={rectangle, rounded corners=4pt, draw=blue!70!black, thick, fill=blue!6, minimum width=2.2cm, minimum height=0.75cm, align=center, font=\scriptsize\bfseries},
-    block/.style={rectangle, rounded corners=6pt, draw=black!75, thick, fill=blue!6, minimum width=6.6cm, minimum height=1.05cm, align=center, font=\small\bfseries},
-    core/.style={rectangle, rounded corners=6pt, draw=purple!80!black, thick, fill=purple!6, minimum width=6.6cm, minimum height=1.1cm, align=center, font=\small\bfseries},
-    side/.style={rectangle, rounded corners=6pt, draw=orange!80!black, thick, fill=orange!8, minimum width=4.5cm, minimum height=1.05cm, align=center, font=\small\bfseries},
+    source/.style={rectangle, rounded corners=4pt, draw=blue!70!black, thick, fill=blue!6, minimum width=2.2cm, minimum height=0.75cm, align=center, font=\footnotesize},
+    block/.style={rectangle, rounded corners=6pt, draw=black!75, thick, fill=blue!6, minimum width=6.6cm, minimum height=1.05cm, align=center, font=\small},
+    core/.style={rectangle, rounded corners=6pt, draw=purple!80!black, thick, fill=purple!6, minimum width=6.6cm, minimum height=1.1cm, align=center, font=\small},
+    side/.style={rectangle, rounded corners=6pt, draw=orange!80!black, thick, fill=orange!8, minimum width=4.5cm, minimum height=1.05cm, align=center, font=\small},
     edge/.style={-Latex, thick, draw=black!75}
 ]
 
 % Row 1: Academic Sources Strip
-\node[source] (s1) {arXiv API};
-\node[source, right=0.25cm of s1] (s2) {Semantic Scholar};
-\node[source, right=0.25cm of s2] (s3) {OpenAlex API};
-\node[source, right=0.25cm of s3] (s4) {CrossRef API};
-\node[draw=blue!50, dashed, rounded corners=6pt, fit=(s1) (s2) (s3) (s4), inner sep=5pt, label={[font=\scriptsize\bfseries, text=blue!80!black]above:Multi-Registry Live Ingestion \& SQLite Caching}] (ingest) {};
+\node[source] (s1) {\textbf{arXiv API}};
+\node[source, right=0.25cm of s1] (s2) {\textbf{Semantic Scholar}};
+\node[source, right=0.25cm of s2] (s3) {\textbf{OpenAlex API}};
+\node[source, right=0.25cm of s3] (s4) {\textbf{CrossRef API}};
+\node[draw=blue!50, dashed, rounded corners=6pt, fit=(s1) (s2) (s3) (s4), inner sep=5pt, label={[font=\scriptsize, text=blue!80!black]above:\textbf{Multi-Registry Live Ingestion \& SQLite Caching}}] (ingest) {};
 
 % Row 2: Stage 1 Fast Retrieval
-\node[block, below=0.9cm of $(s1.south)!0.5!(s4.south)$] (stage1) {Stage 1: Fast Candidate Retrieval\\ \footnotesize Okapi BM25 Lexical + FAISS Dense Embeddings\\ \scriptsize Reciprocal Rank Fusion (Filter $\to$ Top 100 Candidates)};
+\node[block, below=0.9cm of $(s1.south)!0.5!(s4.south)$] (stage1) {\textbf{Stage 1: Fast Candidate Retrieval}\\ \footnotesize Okapi BM25 Lexical + FAISS Dense Embeddings\\ \scriptsize Reciprocal Rank Fusion (Filter $\to$ Top 100 Candidates)};
 
 % Row 3: Stage 2 LinUCB Recommender Engine
-\node[core, below=0.95cm of stage1] (stage2) {Stage 2: LinUCB Recommender Engine\\ \footnotesize 8-Dimensional Contextual Feature Extraction ($\mathbf{x}_a \in \mathbb{R}^8$)\\ \scriptsize Upper Confidence Bound: $\mathbf{x}_a^T \hat{\boldsymbol{\theta}} + \alpha \sqrt{\mathbf{x}_a^T \mathbf{A}^{-1} \mathbf{x}_a}$};
+\node[core, below=0.95cm of stage1] (stage2) {\textbf{Stage 2: LinUCB Recommender Engine}\\ \footnotesize 8-Dimensional Contextual Feature Extraction ($\mathbf{x}_a \in \mathbb{R}^8$)\\ \scriptsize Upper Confidence Bound: $\mathbf{x}_a^T \hat{\boldsymbol{\theta}} + \alpha \sqrt{\mathbf{x}_a^T \mathbf{A}^{-1} \mathbf{x}_a}$};
 
 % Row 4: UI Feed
-\node[block, below=0.95cm of stage2] (feed) {Interactive UI Recommendation Feed\\ \footnotesize Personalized ``Recommended for You'' Carousel};
+\node[block, below=0.95cm of stage2] (feed) {\textbf{Interactive UI Recommendation Feed}\\ \footnotesize Personalized ``Recommended for You'' Carousel};
 
 % Row 5: User Session Profile
-\node[side, below=0.9cm of feed] (profile) {User Session State Profile\\ \footnotesize Preference Vector $\hat{\boldsymbol{\theta}}$ \quad $\cdot$ \quad Covariance Matrix $\mathbf{A}^{-1}$};
+\node[side, below=0.9cm of feed] (profile) {\textbf{User Session State Profile}\\ \footnotesize Preference Vector $\hat{\boldsymbol{\theta}}$ \quad $\cdot$ \quad Covariance Matrix $\mathbf{A}^{-1}$};
 
 % Vertical Pipeline Flow with Clear Labels
 \draw[edge] (ingest.south) -- node[right, font=\scriptsize] {Raw Documents} (stage1.north);
