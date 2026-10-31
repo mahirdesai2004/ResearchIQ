@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import SearchBar from '../components/SearchBar';
 import PaperList from '../components/PaperList';
+import RecommendedFeed from '../components/RecommendedFeed';
 import Chart from '../components/Chart';
 import ChatPanel from '../components/ChatPanel';
 import PaperAnalysisModal from '../components/PaperAnalysisModal';
@@ -319,6 +320,9 @@ export default function ResultsPage() {
                 )}
               </div>
             ) : null}
+
+            {/* SECTION 2: LinUCB Personalized Recommendation Feed */}
+            <RecommendedFeed currentTopic={query} onAnalyze={handleAnalyzePaper} />
 
             {/* SECTION 4: Top Papers */}
             <div>
