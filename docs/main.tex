@@ -175,42 +175,41 @@ ResearchIQ follows an end-to-end \textbf{Two-Stage Recommender Architecture} tha
 \begin{figure}[H]
 \centering
 \begin{tikzpicture}[
-    node distance=0.85cm and 1.2cm,
-    source/.style={rectangle, rounded corners=5pt, draw=blue!80, thick, fill=blue!8, minimum width=2.1cm, minimum height=0.75cm, align=center, font=\scriptsize\bfseries},
-    stage/.style={rectangle, rounded corners=6pt, draw=green!60!black, thick, fill=green!8, minimum width=4.0cm, minimum height=1.05cm, align=center, font=\small\bfseries},
-    core/.style={rectangle, rounded corners=6pt, draw=purple!80!black, thick, fill=purple!8, minimum width=4.0cm, minimum height=1.1cm, align=center, font=\small\bfseries},
-    storage/.style={rectangle, rounded corners=6pt, draw=orange!80!black, thick, fill=orange!10, minimum width=3.2cm, minimum height=1.05cm, align=center, font=\small\bfseries},
+    node distance=1.0cm and 1.4cm,
+    source/.style={rectangle, rounded corners=4pt, draw=blue!70!black, thick, fill=blue!6, minimum width=2.2cm, minimum height=0.75cm, align=center, font=\scriptsize\bfseries},
+    block/.style={rectangle, rounded corners=6pt, draw=black!75, thick, fill=blue!6, minimum width=6.6cm, minimum height=1.05cm, align=center, font=\small\bfseries},
+    core/.style={rectangle, rounded corners=6pt, draw=purple!80!black, thick, fill=purple!6, minimum width=6.6cm, minimum height=1.1cm, align=center, font=\small\bfseries},
+    side/.style={rectangle, rounded corners=6pt, draw=orange!80!black, thick, fill=orange!8, minimum width=4.5cm, minimum height=1.05cm, align=center, font=\small\bfseries},
     edge/.style={-Latex, thick, draw=black!75}
 ]
 
-% Row 1: Academic Sources
+% Row 1: Academic Sources Strip
 \node[source] (s1) {arXiv API};
 \node[source, right=0.25cm of s1] (s2) {Semantic Scholar};
 \node[source, right=0.25cm of s2] (s3) {OpenAlex API};
 \node[source, right=0.25cm of s3] (s4) {CrossRef API};
+\node[draw=blue!50, dashed, rounded corners=6pt, fit=(s1) (s2) (s3) (s4), inner sep=5pt, label={[font=\scriptsize\bfseries, text=blue!80!black]above:Multi-Registry Live Ingestion \& SQLite Caching}] (ingest) {};
 
-% Bounding box for ingestion
-\node[draw=blue!60, dashed, rounded corners=8pt, fit=(s1) (s2) (s3) (s4), inner sep=5pt, label={[font=\scriptsize\bfseries, text=blue!80]above:Multi-Registry Live Ingestion \& SQLite Caching}] (ingest) {};
+% Row 2: Stage 1 Fast Retrieval
+\node[block, below=0.9cm of $(s1.south)!0.5!(s4.south)$] (stage1) {Stage 1: Fast Candidate Retrieval\\ \footnotesize Okapi BM25 Lexical + FAISS Dense Embeddings\\ \scriptsize Reciprocal Rank Fusion (Filter $\to$ Top 100 Candidates)};
 
-% Main Column: Stage 1, Stage 2, Feed
-\node[stage, below=0.9cm of $(s1.south)!0.5!(s4.south)$] (stage1) {Stage 1: Fast Candidate Retrieval\\ \footnotesize Okapi BM25 Lexical + FAISS Dense Embeddings\\ \scriptsize Reciprocal Rank Fusion (Top 100 Candidates)};
+% Row 3: Stage 2 LinUCB Recommender Engine
+\node[core, below=0.95cm of stage1] (stage2) {Stage 2: LinUCB Recommender Engine\\ \footnotesize 8-Dimensional Contextual Feature Extraction ($\mathbf{x}_a \in \mathbb{R}^8$)\\ \scriptsize Upper Confidence Bound: $\mathbf{x}_a^T \hat{\boldsymbol{\theta}} + \alpha \sqrt{\mathbf{x}_a^T \mathbf{A}^{-1} \mathbf{x}_a}$};
 
-\node[core, below=0.9cm of stage1] (stage2) {Stage 2: LinUCB Recommender Engine\\ \footnotesize 8-Dimensional Feature Extraction ($\mathbf{x}_a \in \mathbb{R}^8$)\\ \scriptsize Upper Confidence Bound: $\mathbf{x}_a^T \hat{\boldsymbol{\theta}} + \alpha \sqrt{\mathbf{x}_a^T \mathbf{A}^{-1} \mathbf{x}_a}$};
+% Row 4: UI Feed
+\node[block, below=0.95cm of stage2] (feed) {Interactive UI Recommendation Feed\\ \footnotesize Personalized ``Recommended for You'' Carousel};
 
-\node[stage, below=0.9cm of stage2] (feed) {Interactive UI Recommendation Feed\\ \footnotesize Personalized ``Recommended for You'' Carousel};
+% Row 5: User Session Profile
+\node[side, below=0.9cm of feed] (profile) {User Session State Profile\\ \footnotesize Preference Vector $\hat{\boldsymbol{\theta}}$ \quad $\cdot$ \quad Covariance Matrix $\mathbf{A}^{-1}$};
 
-% Side node: User Session Profile positioned safely to the right
-\node[storage, right=1.6cm of stage2] (profile) {User Session State\\ \footnotesize Preference Vector $\hat{\boldsymbol{\theta}}$\\ \scriptsize Covariance Matrix $\mathbf{A}^{-1}$};
+% Vertical Pipeline Flow with Clear Labels
+\draw[edge] (ingest.south) -- node[right, font=\scriptsize] {Raw Documents} (stage1.north);
+\draw[edge] (stage1.south) -- node[right, font=\scriptsize] {Top 100 Candidates} (stage2.north);
+\draw[edge] (stage2.south) -- node[right, font=\scriptsize] {Top-$K$ Personalized Slate} (feed.north);
+\draw[edge] (feed.south) -- node[right, font=\scriptsize, align=left] {Feedback Signals: Bookmark (+5), PDF (+2), Dismiss (-3), Skip (-0.5)} (profile.north);
 
-% Downward Flow
-\draw[edge] (ingest.south) -- node[right, font=\scriptsize] {Raw Documents} (stage1);
-\draw[edge] (stage1) -- node[right, font=\scriptsize] {Top 100 Candidates} (stage2);
-\draw[edge] (stage2) -- node[right, font=\scriptsize] {Top-$K$ Personalized Slate} (feed);
-
-% Clean feedback arrows: labels placed in open space with ZERO overlap
-\draw[edge] (feed.east) -- ++(0.6, 0) |- node[pos=0.75, right, font=\scriptsize, align=left] {Feedback Signals ($r$)\\ \tiny (+5 Bookmark, +2 PDF)\\ \tiny (-3 Dismiss, -0.5 Skip)} (profile.south);
-
-\draw[edge] (profile.north) -- ++(0, 0.35) -| node[pos=0.25, right, font=\scriptsize, align=left] {Sherman-Morrison\\Update ($<0.4\text{ms}$)} (stage2.east);
+% Feedback loop back to Stage 2 with clear 1.4cm clearance
+\draw[edge] (profile.east) -- ++(1.4, 0) |- node[pos=0.25, right, font=\scriptsize, align=left] {Sherman-Morrison\\Update ($<0.4\text{ms}$)} (stage2.east);
 
 \end{tikzpicture}
 \caption{The Complete Technical Architecture and Recommendation Feedback Pipeline of ResearchIQ.}
