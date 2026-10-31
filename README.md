@@ -113,8 +113,8 @@ npm run dev
 
 ## 👥 Authors & Academic Affiliation
 
-* **Mahir Desai** — Registration No: `23FE10CSE00345` (Section C)
-* **Nemat Sachdeva** — Registration No: `23FE10CSE00107` (Section C)
+* **Mahir Desai** — Registration No: `23FE10CSE00345` (Section B)
+* **Nemat Sachdeva** — Registration No: `23FE10CSE00107` (Section B)
 * **Project Guide:** Dr. Neelam Chaplot
 * **Department:** Department of Computer Science and Engineering  
 * **Institution:** Manipal University Jaipur, Rajasthan, India
